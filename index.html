@@ -5,8 +5,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="toolbox" />
-    <title>toolbox</title>
+    <meta name="apple-mobile-web-app-title" content="ST 素材库" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="theme-color" content="#18181b" />
+    <meta name="application-name" content="ST 素材库" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png" />
+    <title>ST 素材库</title>
+
+    <script>
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", function () {
+          navigator.serviceWorker.register("./service-worker.js", { scope: "./" }).catch(function (error) {
+            console.warn("PWA service worker registration failed", error);
+          });
+        });
+      }
+    </script>
 
     <!-- Tailwind CSS (Play CDN, JIT compiled in-browser) -->
     <script src="https://cdn.tailwindcss.com"></script>
