@@ -813,7 +813,14 @@ function injectPngTextChunk(arrayBuffer, keyword, value) {
   chunkData[kwBytes.length] = 0;
   chunkData.set(valBytes, kwBytes.length + 1);
   const crcTable = makeCrcTable();
-  const crc = calcCrc(crcTable, chunkData);
+  // PNG CRC covers the four-byte chunk type *and* the chunk data.
+  // Calculating it from chunkData alone makes strict readers (including
+  // SillyTavern's PNG parser) reject the embedded character metadata.
+  const typeBytes = encoder.encode("tEXt");
+  const crcInput = new Uint8Array(typeBytes.length + chunkData.length);
+  crcInput.set(typeBytes, 0);
+  crcInput.set(chunkData, typeBytes.length);
+  const crc = calcCrc(crcTable, crcInput);
   const chunkLength = chunkData.length;
   const totalChunkLen = 4 + 4 + chunkData.length + 4;
   const newBuf = new Uint8Array(arrayBuffer.byteLength + totalChunkLen);
@@ -822,10 +829,7 @@ function injectPngTextChunk(arrayBuffer, keyword, value) {
   const ndv = new DataView(newBuf.buffer);
   ndv.setUint32(pos, chunkLength);
   pos += 4;
-  const typeStr = "tEXt";
-  for (let i = 0; i < 4; i++) {
-    newBuf[pos + i] = typeStr.charCodeAt(i);
-  }
+  newBuf.set(typeBytes, pos);
   pos += 4;
   newBuf.set(chunkData, pos);
   pos += chunkData.length;
@@ -847,6 +851,41 @@ function getPureCardDataForExport(cardData) {
   delete clean.createdAt;
   delete clean.updatedAt;
   return clean;
+}
+
+function normalizeCardEnvelopeForExport(card, cardData) {
+  const source = JSON.parse(JSON.stringify(cardData || {}));
+  const declaredSpec = source?.spec || source?.data?.spec || "";
+  const isV3 = card?.version === "v3" || declaredSpec === "chara_card_v3";
+  const isV2 = card?.version === "v2" || declaredSpec === "chara_card_v2";
+  if (!isV3 && !isV2) return source;
+
+  const spec = isV3 ? "chara_card_v3" : "chara_card_v2";
+  const specVersion = isV3 ? "3.0" : "2.0";
+  if (source.data && typeof source.data === "object" && !Array.isArray(source.data)) {
+    source.spec = spec;
+    source.spec_version = String(source.spec_version || specVersion);
+    return source;
+  }
+
+  // Older toolbox builds stored only the inner `data` object for CCv3 PNGs.
+  // Restore the required envelope instead of exporting that inner object as if
+  // it were a complete CharacterCardV3 JSON document.
+  return {
+    spec,
+    spec_version: specVersion,
+    data: source
+  };
+}
+
+function buildV2FallbackFromCard(cardData) {
+  const source = JSON.parse(JSON.stringify(cardData || {}));
+  const data = source?.data && typeof source.data === "object" ? source.data : source;
+  return {
+    spec: "chara_card_v2",
+    spec_version: "2.0",
+    data: JSON.parse(JSON.stringify(data))
+  };
 }
 
 // src/utils/cardParser.ts
@@ -905,7 +944,10 @@ async function parseCardFile(file) {
         if (spec && spec !== "chara_card_v3" && spec !== "chara_card_v2") {
           console.warn("\u672A\u77E5\u89D2\u8272\u5361 spec\uFF0C\u4ECD\u5C1D\u8BD5\u5BFC\u5165:", spec, specVersion);
         }
-        cardData = parsed.data || parsed;
+        // Keep the complete CCv3 envelope. Stripping `spec`, `spec_version`
+        // and `data` here produces JSON/PNG exports that SillyTavern only
+        // partially recognises (notably losing greetings and character_book).
+        cardData = parsed;
         version = "v3";
         author = parsed.data?.creator || parsed.data?.extensions?.author || parsed.creator || parsed.author || "";
       } catch (e) {
@@ -5333,7 +5375,7 @@ ${wb.content || ""}`;
     showToast("\u89D2\u8272\u5361\u5DF2\u5220\u9664", "info");
   };
   const buildFullCardExportData = (card) => {
-    const data = getCurrentCardData(card);
+    const data = normalizeCardEnvelopeForExport(card, getCurrentCardData(card));
     const tags = Array.from(new Set([
       ...getCardTags(card),
       ...card.tags || []
@@ -5342,6 +5384,10 @@ ${wb.content || ""}`;
     const regexScripts = getCardRegex(card) || [];
     const target = data?.data && typeof data.data === "object" ? data.data : data;
     if (!target || typeof target !== "object") return data;
+    // Always write the effective greeting values into the standards-defined
+    // data object, including cards imported by older toolbox versions.
+    target.first_mes = getCardGreeting(card);
+    target.alternate_greetings = JSON.parse(JSON.stringify(getCardAlternateGreetings(card) || []));
     if (tags.length) target.tags = tags;
     if (worldBook && typeof worldBook === "object") {
       target.character_book = JSON.parse(JSON.stringify(worldBook));
@@ -5388,8 +5434,18 @@ ${wb.content || ""}`;
       const blob = await new Promise((res) => canvas.toBlob(res, "image/png"));
       if (!blob) throw new Error("Blob creation failed");
       const buf = await blob.arrayBuffer();
-      const keyword = card.version === "v3" ? "ccv3" : "chara";
-      const newPngBuf = injectPngTextChunk(buf, keyword, b64);
+      let newPngBuf;
+      const isV3 = pureData?.spec === "chara_card_v3" || card.version === "v3";
+      if (isV3) {
+        // CCv3 requires the complete CharacterCardV3 JSON in `ccv3`.
+        // Also include a standards-compliant V2 fallback for older readers.
+        const v2Json = JSON.stringify(buildV2FallbackFromCard(pureData));
+        const v2Base64 = btoa(unescape(encodeURIComponent(v2Json)));
+        newPngBuf = injectPngTextChunk(buf, "chara", v2Base64);
+        newPngBuf = injectPngTextChunk(newPngBuf, "ccv3", b64);
+      } else {
+        newPngBuf = injectPngTextChunk(buf, "chara", b64);
+      }
       const pngBlob = new Blob([newPngBuf], { type: "image/png" });
       const url = URL.createObjectURL(pngBlob);
       const a = document.createElement("a");
