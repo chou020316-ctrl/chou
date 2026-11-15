@@ -214,7 +214,7 @@ html, body, #root {
 .vault-review::backdrop{background:#10101899}.vault-review h2{font-size:1.15rem;font-weight:bold}.vault-review small,.vault-review strong{display:block}.vault-review select{max-width:100%;margin-top:10px;color:inherit;background:Canvas}.vault-pictures,.vault-actions{display:flex;gap:8px;margin:12px 0}.vault-pictures>div{flex:1;min-width:0}.vault-pictures img,.vault-pictures span{display:grid;place-items:center;width:100%;height:100px;object-fit:contain;background:#8882;border-radius:8px}.vault-actions{flex-wrap:wrap;margin-bottom:0}.vault-actions button,.vault-duplicate button{padding:8px;border:1px solid #8886;border-radius:8px}.vault-duplicate{position:fixed;z-index:110;bottom:max(20px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);display:flex;width:max-content;max-width:92vw;align-items:center;background:Canvas;color:CanvasText;border-radius:9px;box-shadow:0 2px 12px #0003}.vault-duplicate button:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 </style><style>
 .vault-history{display:grid;gap:10px;font-size:14px;overflow-wrap:anywhere}.vault-history article{border:1px solid #8885;border-radius:12px;padding:12px;min-width:0}.vault-history small,.vault-history strong{display:block}.vault-history pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:40vh;overflow:auto;padding:8px;background:#8881;font-size:13px}.vault-history details{margin:.6em 0}.vault-history summary{cursor:pointer}.vh-link,.vh-row{padding:8px;text-align:left;border:1px solid #8885;border-radius:8px}.vh-row{width:100%;border:none}.vh-link:disabled{opacity:.4}.vh-cover{width:100%;max-height:150px;object-fit:contain}.vh-overlay{position:fixed;inset:0;z-index:220;display:grid;place-items:center;background:#0007;padding:12px}.vh-panel{background:Canvas;color:CanvasText;color-scheme:light dark;max-height:88dvh;overflow:auto;width:min(100%,520px);padding:18px;border-radius:14px}.vh-pair{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}.vault-history h2{font-size:1.2rem;font-weight:bold}
-</style></head>
+</style><style>.vh-scan-tabs{display:flex;gap:4px;flex-wrap:wrap}.vh-scan-tabs [aria-pressed="true"]{background:CanvasText;color:Canvas;font-weight:bold}</style></head>
   <body>
     <div id="root"></div>
 
@@ -1130,22 +1130,38 @@ function scanCardPairs(cards) {
     for (let j=i+1;j<rows.length;j++) {
       const a=rows[i], b=rows[j];
       const identical=a.signature===b.signature;
-      if (identical || a.p.names.some(n=>b.p.names.includes(n))) pairs.push({a:a.card,b:b.card,identical});
+      const ignored=(a.card.distinctCardIds || []).includes(b.card.id) || (b.card.distinctCardIds || []).includes(a.card.id);
+      if (ignored || identical || a.p.names.some(n=>b.p.names.includes(n))) pairs.push({a:a.card,b:b.card,identical,ignored});
     }
   }
   return pairs.sort((a,b)=>Number(b.identical)-Number(a.identical));
+}
+function markDistinctCards(cards, a, b, distinct) {
+  if (a===b || !cards.some(c=>c.id===a) || !cards.some(c=>c.id===b)) return cards;
+  return cards.map(c=>{
+    if (c.id!==a && c.id!==b) return c;
+    const peer=c.id===a ? b : a;
+    const ids=(c.distinctCardIds || []).filter(id=>id!==peer);
+    return {...c,distinctCardIds:distinct ? [...ids,peer] : ids};
+  });
+}
+function joinedDate(value) {
+  if (!value) return "未记录";
+  const date=new Date(value);
+  return Number.isFinite(date.getTime()) ? date.toLocaleString("zh-CN",{year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",hour12:false}) : "未记录";
 }
 function combineDuplicates(cards, keepId, otherId) {
   const kept=cards.find(c=>c.id===keepId), other=cards.find(c=>c.id===otherId);
   if (!kept || !other || stableCardJSON(revisionFields(kept)) !== stableCardJSON(revisionFields(other))) return cards;
   const union=(a,b)=>Array.from(new Set([...(a||[]),...(b||[])]));
-  const merged={...kept, tags:union(kept.tags,other.tags),
+  const merged={...kept, distinctCardIds:union(kept.distinctCardIds,other.distinctCardIds).filter(id=>id!==keepId && id!==otherId), tags:union(kept.tags,other.tags),
     extraCovers:union(kept.extraCovers,[...(other.extraCovers || []),other.coverImage]).filter(x=>x && x!==kept.coverImage),
     screenshots:{...kept.screenshots,authorsNote:union(kept.screenshots?.authorsNote,other.screenshots?.authorsNote),
       favoriteScenes:union(kept.screenshots?.favoriteScenes,other.screenshots?.favoriteScenes)},
     mergedCopies:[...(kept.mergedCopies || []),other]};
   return cards.filter(c=>c.id!==otherId).map(card=>{
-    const current=card.id===keepId ? merged : card;
+    let current=card.id===keepId ? merged : card;
+    if (current.distinctCardIds?.includes(otherId)) current={...current,distinctCardIds:union(current.distinctCardIds.filter(id=>id!==otherId),[keepId])};
     const links=current.id===keepId ? [...(kept.associations||[]),...(other.associations||[])] : current.associations;
     if (!links || (current!==merged && !links.some(x=>x.cardId===otherId || x.noteOwnerId===otherId))) return current;
     const rewritten=links.map(x=>({...x,cardId:x.cardId===otherId?keepId:x.cardId,noteOwnerId:x.noteOwnerId===otherId?keepId:x.noteOwnerId})).filter(x=>x.cardId!==current.id);
@@ -1197,22 +1213,29 @@ function ArchivedCard({card,copy}) {
   const [expanded,setExpanded]=useState(false);
   return hVault("div",null,hVault("button",{className:"vh-link",onClick:()=>setExpanded(!expanded)},"查看来源卡记录"),expanded && hVault(VersionPanel,{card,copy}));
 }
-function ScanPanel({cards,close,merge}) {
-  const pairs=React2.useMemo(()=>scanCardPairs(cards),[cards]);
+function ScanPanel({cards,close,merge,mark}) {
+  const allPairs=React2.useMemo(()=>scanCardPairs(cards),[cards]);
+  const [tab,setTab]=useState("exact");
+  const groups={exact:[],similar:[],ignored:[]};
+  for (const item of allPairs) groups[item.ignored?"ignored":item.identical?"exact":"similar"].push(item);
+  const pairs=groups[tab];
   const [index,setIndex]=useState(0);
   const pos=Math.min(index,pairs.length-1), pair=pairs[pos];
   const button=(label,fn,disabled=false)=>hVault("button",{className:"vh-link",onClick:fn,disabled},label);
   return hVault("div",{className:"vh-overlay"},hVault("section",{className:"vh-panel vault-history",role:"dialog","aria-modal":true,"aria-label":"整理重复卡"},
     hVault("h2",null,"整理重复卡"),button("关闭",close),
-    !pair ? hVault("p",null,"全部 "+cards.length+" 张卡已检查，没有发现资料相同或同名的卡。") :
+    hVault("div",{className:"vh-scan-tabs"},...[["exact","资料相同"],["similar","同名待辨认"],["ignored","已区分"]].map(([key,label])=>
+      hVault("button",{key,className:"vh-link","aria-pressed":tab===key,onClick:()=>{setTab(key);setIndex(0);}},label+" "+groups[key].length))),
+    !pair ? hVault("p",null,({exact:"没有发现卡内资料相同的卡。",similar:"没有待辨认的同名卡。",ignored:"还没有标记为不同作品的卡对。"})[tab]) :
     hVault("div",null,hVault("p",null,(pos+1)+" / "+pairs.length+" 对 · "+(pair.identical?"卡内资料一致":"同名，资料有差异")),
       hVault("div",{className:"vh-pair"},...[pair.a,pair.b].map((c,n)=>hVault("article",{key:c.id},
         c.coverImage && hVault("img",{src:c.coverImage,className:"vh-cover",alt:"封面"}),hVault("strong",null,getCardDisplayName(c)),
-        hVault("small",null,getCardCreator(c)+" · "+(c.group||"默认")),hVault("small",null,c.fileName),
+        hVault("small",null,getCardCreator(c)+" · "+(c.group||"默认")),hVault("small",null,c.fileName),hVault("small",null,"加入卡库："+joinedDate(c.createdAt)),
         hVault("small",null,"标签："+((c.tags||[]).join("、")||"无")),
         hVault("small",null,"截图 "+((c.screenshots?.authorsNote?.length||0)+(c.screenshots?.favoriteScenes?.length||0))+" · 备用封面 "+(c.extraCovers?.length||0)),
-        pair.identical && button("保留这张并合并",()=>{if(confirm("保留这张卡，并收下另一张的封面、标签和截图？来源卡会存入版本记录。"))merge(c.id,n?pair.a.id:pair.b.id);})))),
+        pair.identical && !pair.ignored && button("保留这张并合并",()=>{if(confirm("保留这张卡，并收下另一张的封面、标签和截图？来源卡会存入版本记录。"))merge(c.id,n?pair.a.id:pair.b.id);})))),
       !pair.identical && hVault(FieldComparison,{key:pair.a.id+pair.b.id,before:pair.a,after:pair.b}),
+      (tab==="similar" || tab==="ignored") && button(pair.ignored?"撤销区分":"不同作品，两张都保留",()=>mark(pair.a.id,pair.b.id,!pair.ignored)),
       button("上一对",()=>setIndex(pos-1),pos===0),button("下一对",()=>setIndex(pos+1),pos===pairs.length-1))));
 }
 function reviewCardImport(card, matches) {
@@ -6153,7 +6176,7 @@ ${item.details}`], { type: "text/plain;charset=utf-8" });
     ] });
   };
   return /* @__PURE__ */ jsxs("div", { className: "min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 flex flex-col font-sans antialiased selection:bg-zinc-800 selection:text-white", children: [
-    showScan && jsx(ScanPanel,{cards:appData.cards,close:()=>setShowScan(false),merge:(keep,other)=>updateAppData(prev=>({...prev,cards:combineDuplicates(prev.cards,keep,other)}))}),
+    showScan && jsx(ScanPanel,{cards:appData.cards,close:()=>setShowScan(false),mark:(a,b,distinct)=>updateAppData(prev=>({...prev,cards:markDistinctCards(prev.cards,a,b,distinct)})),merge:(keep,other)=>updateAppData(prev=>({...prev,cards:combineDuplicates(prev.cards,keep,other)}))}),
     lastDuplicate && !detailCardId && jsx("div", {className:"vault-duplicate", role:"status", children:[
       jsx("button",{onClick:()=>{setDetailCardId(lastDuplicate.id);setLastDuplicate(null);},children:"已收藏「"+lastDuplicate.name+"」 · 查看旧卡"}),
       jsx("button",{"aria-label":"关闭提醒",onClick:()=>setLastDuplicate(null),children:"×"})
