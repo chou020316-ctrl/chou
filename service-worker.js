@@ -1,4 +1,4 @@
-const CACHE_NAME = "st-vault-shell-v7";
+const CACHE_NAME = "st-vault-shell-v8";
 const INDEX_URL = new URL("./index.html", self.registration.scope).href;
 const LOCAL_ASSETS = [
   "./index.html",

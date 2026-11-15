@@ -1152,7 +1152,9 @@ function joinedDate(value) {
 }
 function combineDuplicates(cards, keepId, otherId) {
   const kept=cards.find(c=>c.id===keepId), other=cards.find(c=>c.id===otherId);
-  if (!kept || !other || stableCardJSON(revisionFields(kept)) !== stableCardJSON(revisionFields(other))) return cards;
+  if (!kept || !other || keepId===otherId) return cards;
+  const pair=scanCardPairs([kept,other])[0];
+  if (!pair || pair.ignored) return cards;
   const union=(a,b)=>Array.from(new Set([...(a||[]),...(b||[])]));
   const merged={...kept, distinctCardIds:union(kept.distinctCardIds,other.distinctCardIds).filter(id=>id!==keepId && id!==otherId), tags:union(kept.tags,other.tags),
     extraCovers:union(kept.extraCovers,[...(other.extraCovers || []),other.coverImage]).filter(x=>x && x!==kept.coverImage),
@@ -1233,7 +1235,10 @@ function ScanPanel({cards,close,merge,mark}) {
         hVault("small",null,getCardCreator(c)+" · "+(c.group||"默认")),hVault("small",null,c.fileName),hVault("small",null,"加入卡库："+joinedDate(c.createdAt)),
         hVault("small",null,"标签："+((c.tags||[]).join("、")||"无")),
         hVault("small",null,"截图 "+((c.screenshots?.authorsNote?.length||0)+(c.screenshots?.favoriteScenes?.length||0))+" · 备用封面 "+(c.extraCovers?.length||0)),
-        pair.identical && !pair.ignored && button("保留这张并合并",()=>{if(confirm("保留这张卡，并收下另一张的封面、标签和截图？来源卡会存入版本记录。"))merge(c.id,n?pair.a.id:pair.b.id);})))),
+        !pair.ignored && button(n?"保留右边这张":"保留左边这张",()=>{
+          const side=n?"右":"左";
+          if (confirm("保留"+side+"边的「"+getCardDisplayName(c)+"」（加入卡库："+joinedDate(c.createdAt)+"）？另一张将从卡列表移入这张卡的「版本记录 → 合并来源」，可在那里查看原文。")) merge(c.id,n?pair.a.id:pair.b.id);
+        })))),
       !pair.identical && hVault(FieldComparison,{key:pair.a.id+pair.b.id,before:pair.a,after:pair.b}),
       (tab==="similar" || tab==="ignored") && button(pair.ignored?"撤销区分":"不同作品，两张都保留",()=>mark(pair.a.id,pair.b.id,!pair.ignored)),
       button("上一对",()=>setIndex(pos-1),pos===0),button("下一对",()=>setIndex(pos+1),pos===pairs.length-1))));
