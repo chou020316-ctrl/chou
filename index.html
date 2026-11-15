@@ -209,7 +209,12 @@ html, body, #root {
 }
 
     </style>
-  </head>
+  <style>
+.vault-review{color:CanvasText;background:Canvas;color-scheme:light dark;border:1px solid #8888;border-radius:16px;width:min(92vw,440px);max-height:84dvh;overflow:auto;padding:18px;margin:auto;overflow-wrap:anywhere}
+.vault-review::backdrop{background:#10101899}.vault-review h2{font-size:1.15rem;font-weight:bold}.vault-review small,.vault-review strong{display:block}.vault-review select{max-width:100%;margin-top:10px;color:inherit;background:Canvas}.vault-pictures,.vault-actions{display:flex;gap:8px;margin:12px 0}.vault-pictures>div{flex:1;min-width:0}.vault-pictures img,.vault-pictures span{display:grid;place-items:center;width:100%;height:100px;object-fit:contain;background:#8882;border-radius:8px}.vault-actions{flex-wrap:wrap;margin-bottom:0}.vault-actions button,.vault-duplicate button{padding:8px;border:1px solid #8886;border-radius:8px}.vault-duplicate{position:fixed;z-index:110;bottom:max(20px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);display:flex;width:max-content;max-width:92vw;align-items:center;background:Canvas;color:CanvasText;border-radius:9px;box-shadow:0 2px 12px #0003}.vault-duplicate button:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+</style><style>
+.vault-history{display:grid;gap:10px;font-size:14px;overflow-wrap:anywhere}.vault-history article{border:1px solid #8885;border-radius:12px;padding:12px;min-width:0}.vault-history small,.vault-history strong{display:block}.vault-history pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:40vh;overflow:auto;padding:8px;background:#8881;font-size:13px}.vault-history details{margin:.6em 0}.vault-history summary{cursor:pointer}.vh-link,.vh-row{padding:8px;text-align:left;border:1px solid #8885;border-radius:8px}.vh-row{width:100%;border:none}.vh-link:disabled{opacity:.4}.vh-cover{width:100%;max-height:150px;object-fit:contain}.vh-overlay{position:fixed;inset:0;z-index:220;display:grid;place-items:center;background:#0007;padding:12px}.vh-panel{background:Canvas;color:CanvasText;color-scheme:light dark;max-height:88dvh;overflow:auto;width:min(100%,520px);padding:18px;border-radius:14px}.vh-pair{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}.vault-history h2{font-size:1.2rem;font-weight:bold}
+</style></head>
   <body>
     <div id="root"></div>
 
@@ -1032,6 +1037,236 @@ async function parseCardFile(file) {
   throw new Error("\u4E0D\u652F\u6301\u7684\u6587\u4EF6\u683C\u5F0F: " + ext);
 }
 
+// Compare the effective content, retaining unknown extension and envelope fields.
+function stableCardJSON(value) {
+  return JSON.stringify(value, (_key, item) =>
+    item && typeof item === "object" && !Array.isArray(item)
+      ? Object.fromEntries(Object.keys(item).sort().map(key => [key, item[key]]))
+      : item);
+}
+function cardProfile(card) {
+  const raw = card.edited ? getCurrentCardData(card) : card.rawData;
+  const {data, spec, spec_version, ...outer} = raw || {};
+  const wrapped = data && typeof data === "object" && !Array.isArray(data);
+  const fields = {...(wrapped ? data : outer)};
+  if (wrapped && Object.keys(outer).length) fields["（外层资料）"] = outer;
+  if (!fields.alternate_greetings) fields.alternate_greetings = [];
+  if (!fields.first_mes) fields.first_mes = "";
+  const normalize = text => String(text || "").normalize("NFKC").trim().toLowerCase();
+  const names = [fields.name, fields.char_name, card.name, getCardDisplayName(card)].map(normalize).filter(Boolean);
+  return {fields, names, signature: stableCardJSON(fields)};
+}
+async function sameCoverImage(a, b) {
+  if (!b || a === b) return true;
+  if (!a || !a.startsWith("data:image/") || !b.startsWith("data:image/")) return false;
+  try {
+    const load = async src => {
+      const img = new Image();
+      img.src = src;
+      await img.decode();
+      return img;
+    };
+    const [left, right] = await Promise.all([load(a),load(b)]);
+    if (left.width !== right.width || left.height !== right.height) return false;
+    const pixels = img => {
+      const canvas = document.createElement("canvas");
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img,0,0);
+      return ctx.getImageData(0,0,img.width,img.height).data;
+    };
+    // Very large covers remain available for manual comparison on mobile.
+    if (left.width * left.height > 5e6) return false;
+    const x = pixels(left), y = pixels(right);
+    return x.every((v,i) => v === y[i]);
+  } catch { return false; }
+}
+function cardChanges(a, b) {
+  const labels = {name:"角色名", char_name:"角色名", creator:"作者", description:"角色描述", personality:"性格", scenario:"场景", character_book:"世界书", extensions:"扩展（含正则等）", tags:"标签", mes_example:"对话示例", character_version:"角色版本", system_prompt:"系统提示词", creator_notes:"作者备注"};
+  const count = f => Number(Boolean(f.first_mes)) + (Array.isArray(f.alternate_greetings) ? f.alternate_greetings.length : 0);
+  const changes = [];
+  for (const k of new Set([...Object.keys(a), ...Object.keys(b)])) {
+    if (stableCardJSON(a[k]) === stableCardJSON(b[k])) continue;
+    if (k === "first_mes" || k === "alternate_greetings") {
+      const label = count(a) === count(b) ? "开场白内容有修改" : `开场白 ${count(a)} → ${count(b)} 条`;
+      if (!changes.includes(label)) changes.push(label);
+    } else changes.push((labels[k] || k) + "有修改");
+  }
+  return changes;
+}
+function snapshotCard(c) {
+  return Object.fromEntries(["rawData","editHistory","edited","name","author","authorManual","version","fileName","fileType","coverImage"].map(k => [k,c[k]]));
+}
+function revisionFields(card) {
+  const fields = {...cardProfile(card).fields};
+  if (card.rawData?.spec) fields.spec = card.rawData.spec;
+  if (card.rawData?.spec_version) fields.spec_version = card.rawData.spec_version;
+  return fields;
+}
+function recordRevision(old, patch, reason, at) {
+  const next = {...old,...patch};
+  const before = snapshotCard(old), after = snapshotCard(next);
+  const fieldsEqual = (a,b) => stableCardJSON(revisionFields(a)) === stableCardJSON(revisionFields(b));
+  const equal = (a,b) => a.coverImage === b.coverImage && fieldsEqual(a,b);
+  if (equal(before,after)) return next;
+  const history = [...(old.revisions || [])];
+  if (!history.length || !equal(history[history.length-1].card,before)) {
+    history.push({card:before, at:old.updatedAt || old.createdAt || null, reason:history.length ? "更新前的本地编辑" : "最早保留的版本"});
+  }
+  history.push({card:after,at,reason});
+  return {...next,updatedAt:at,revisions:history};
+}
+function importedPatch(old, incoming) {
+  return {rawData:incoming.rawData, name:incoming.name, version:incoming.version, fileType:incoming.fileType,
+    fileName:incoming.fileName, coverImage:incoming.coverImage || old.coverImage,
+    author:old.authorManual ? old.author : incoming.author, edited:false, editHistory:{},
+    tags:[...new Set([...(old.tags || []),...(incoming.tags || [])])]};
+}
+function scanCardPairs(cards) {
+  const rows = cards.map(card => ({card,p:cardProfile(card), signature:stableCardJSON(revisionFields(card))}));
+  const pairs = [];
+  for (let i=0;i<rows.length;i++) {
+    for (let j=i+1;j<rows.length;j++) {
+      const a=rows[i], b=rows[j];
+      const identical=a.signature===b.signature;
+      if (identical || a.p.names.some(n=>b.p.names.includes(n))) pairs.push({a:a.card,b:b.card,identical});
+    }
+  }
+  return pairs.sort((a,b)=>Number(b.identical)-Number(a.identical));
+}
+function combineDuplicates(cards, keepId, otherId) {
+  const kept=cards.find(c=>c.id===keepId), other=cards.find(c=>c.id===otherId);
+  if (!kept || !other || stableCardJSON(revisionFields(kept)) !== stableCardJSON(revisionFields(other))) return cards;
+  const union=(a,b)=>Array.from(new Set([...(a||[]),...(b||[])]));
+  const merged={...kept, tags:union(kept.tags,other.tags),
+    extraCovers:union(kept.extraCovers,[...(other.extraCovers || []),other.coverImage]).filter(x=>x && x!==kept.coverImage),
+    screenshots:{...kept.screenshots,authorsNote:union(kept.screenshots?.authorsNote,other.screenshots?.authorsNote),
+      favoriteScenes:union(kept.screenshots?.favoriteScenes,other.screenshots?.favoriteScenes)},
+    mergedCopies:[...(kept.mergedCopies || []),other]};
+  return cards.filter(c=>c.id!==otherId).map(card=>{
+    const current=card.id===keepId ? merged : card;
+    const links=current.id===keepId ? [...(kept.associations||[]),...(other.associations||[])] : current.associations;
+    if (!links || (current!==merged && !links.some(x=>x.cardId===otherId || x.noteOwnerId===otherId))) return current;
+    const rewritten=links.map(x=>({...x,cardId:x.cardId===otherId?keepId:x.cardId,noteOwnerId:x.noteOwnerId===otherId?keepId:x.noteOwnerId})).filter(x=>x.cardId!==current.id);
+    return {...current,associations:rewritten.filter((x,i)=>rewritten.findIndex(y=>y.cardId===x.cardId)===i)};
+  });
+}
+const vaultDate = t => t ? new Date(t).toLocaleString("zh-CN",{hour12:false}) : "日期未记录";
+const fieldLabels={first_mes:"第一条开场白",alternate_greetings:"备用开场白",description:"角色描述",character_book:"世界书",character_version:"作者版本",creator:"作者",extensions:"扩展",tags:"标签",scenario:"场景",personality:"性格",name:"角色名",system_prompt:"系统提示词",creator_notes:"作者备注",mes_example:"对话示例"};
+const hVault = React2.createElement;
+function fieldText(value) {
+  if (value === undefined) return "（无此字段）";
+  return typeof value==="string" ? value || "（空）" : JSON.stringify(value,null,2);
+}
+function FieldComparison({before,after}) {
+  const [open,setOpen]=useState("");
+  const a=revisionFields(before), b=revisionFields(after);
+  const keys=[...new Set([...Object.keys(a),...Object.keys(b)])].filter(k=>stableCardJSON(a[k])!==stableCardJSON(b[k]));
+  return hVault("div",null,...keys.map(k=>hVault("div",{key:k},
+    hVault("button",{className:"vh-link",onClick:()=>setOpen(open===k?"":k)},(open===k?"▾ ":"▸ ")+(fieldLabels[k]||k)),
+    open===k && hVault("div",null,...[["之前",a[k]],["之后",b[k]]].map(([label,v])=>hVault("div",{key:label},hVault("small",null,label),hVault("pre",null,fieldText(v))))))),
+    before.coverImage!==after.coverImage && hVault("p",null,"封面有变化"));
+}
+function revisionName(c) {
+  const d=c.rawData?.data || c.rawData || {};
+  return d.character_version ? "作者版本 "+d.character_version : "作者未标版本";
+}
+function VersionPanel({card,restore,copy}) {
+  const [opened,setOpened]=useState(null);
+  const entries=[...(card.revisions || [])];
+  const last=entries[entries.length-1]?.card;
+  if (!last || last.coverImage!==card.coverImage || stableCardJSON(revisionFields(last))!==stableCardJSON(revisionFields(card))) {
+    entries.push({card:snapshotCard(card),at:card.updatedAt||card.createdAt,reason:last?"当前本地编辑":"当前留存版本"});
+  }
+  return hVault("div",{className:"vault-history"},...entries.map((r,i)=>{
+    const selected=opened===i;
+    return hVault("article",{key:i},hVault("button",{className:"vh-row",onClick:()=>setOpened(selected?null:i)},
+      hVault("strong",null,"记录 "+(i+1)+" · "+revisionName(r.card)),hVault("small",null,r.reason+" · "+vaultDate(r.at))),
+      i>0 && hVault("p",null,[...cardChanges(revisionFields(entries[i-1].card),revisionFields(r.card)),...(entries[i-1].card.coverImage!==r.card.coverImage?["封面已更换"]:[])].join("、")),
+      selected && hVault("section",null,i>0 && hVault(FieldComparison,{before:entries[i-1].card,after:r.card}),
+        r.card.coverImage && hVault("img",{src:r.card.coverImage,alt:"该版封面",className:"vh-cover"}),
+        hVault("details",null,hVault("summary",null,"查看该版完整资料"),hVault("pre",null,fieldText(getCurrentCardData(r.card)))),
+        hVault("details",null,hVault("summary",null,"查看或复制该版开场白"),...[getCardGreeting(r.card),...(getCardAlternateGreetings(r.card)||[])].filter(Boolean).map((v,n)=>hVault("div",{key:n},hVault("pre",null,v),hVault("button",{className:"vh-link",onClick:()=>copy(v,"已复制开场白")},"复制第 "+(n+1)+" 条")))),
+        restore && hVault("button",{className:"vh-link",onClick:()=>{if(confirm("将这份资料和封面恢复为当前版？当前资料也会留在版本记录里。"))restore(r.card);}},"恢复为当前版")));
+  }).reverse(),
+  ...(card.extraCovers || []).filter(x=>typeof x==="string").map((url,i)=>hVault("details",{key:"cover"+i},hVault("summary",null,"备用封面 "+(i+1)),hVault("img",{className:"vh-cover",src:url}))),
+  ...(card.mergedCopies || []).map((c,i)=>hVault("details",{key:"merge"+i},hVault("summary",null,"合并来源 · "+getCardDisplayName(c)+" · "+(c.fileName||c.group)),hVault(ArchivedCard,{card:c,copy}))));
+}
+function ArchivedCard({card,copy}) {
+  const [expanded,setExpanded]=useState(false);
+  return hVault("div",null,hVault("button",{className:"vh-link",onClick:()=>setExpanded(!expanded)},"查看来源卡记录"),expanded && hVault(VersionPanel,{card,copy}));
+}
+function ScanPanel({cards,close,merge}) {
+  const pairs=React2.useMemo(()=>scanCardPairs(cards),[cards]);
+  const [index,setIndex]=useState(0);
+  const pos=Math.min(index,pairs.length-1), pair=pairs[pos];
+  const button=(label,fn,disabled=false)=>hVault("button",{className:"vh-link",onClick:fn,disabled},label);
+  return hVault("div",{className:"vh-overlay"},hVault("section",{className:"vh-panel vault-history",role:"dialog","aria-modal":true,"aria-label":"整理重复卡"},
+    hVault("h2",null,"整理重复卡"),button("关闭",close),
+    !pair ? hVault("p",null,"全部 "+cards.length+" 张卡已检查，没有发现资料相同或同名的卡。") :
+    hVault("div",null,hVault("p",null,(pos+1)+" / "+pairs.length+" 对 · "+(pair.identical?"卡内资料一致":"同名，资料有差异")),
+      hVault("div",{className:"vh-pair"},...[pair.a,pair.b].map((c,n)=>hVault("article",{key:c.id},
+        c.coverImage && hVault("img",{src:c.coverImage,className:"vh-cover",alt:"封面"}),hVault("strong",null,getCardDisplayName(c)),
+        hVault("small",null,getCardCreator(c)+" · "+(c.group||"默认")),hVault("small",null,c.fileName),
+        hVault("small",null,"标签："+((c.tags||[]).join("、")||"无")),
+        hVault("small",null,"截图 "+((c.screenshots?.authorsNote?.length||0)+(c.screenshots?.favoriteScenes?.length||0))+" · 备用封面 "+(c.extraCovers?.length||0)),
+        pair.identical && button("保留这张并合并",()=>{if(confirm("保留这张卡，并收下另一张的封面、标签和截图？来源卡会存入版本记录。"))merge(c.id,n?pair.a.id:pair.b.id);})))),
+      !pair.identical && hVault(FieldComparison,{key:pair.a.id+pair.b.id,before:pair.a,after:pair.b}),
+      button("上一对",()=>setIndex(pos-1),pos===0),button("下一对",()=>setIndex(pos+1),pos===pairs.length-1))));
+}
+function reviewCardImport(card, matches) {
+  return new Promise(resolve => {
+    const dialog = document.createElement("dialog");
+    dialog.className = "vault-review";
+    function element(tag, text, parent) {
+      const el = document.createElement(tag);
+      if (text) el.textContent = text;
+      parent.append(el);
+      return el;
+    }
+    element("h2", "卡库里有相似的角色卡", dialog);
+    element("small", card.fileName, dialog);
+    const select = element("select", "", dialog);
+    select.setAttribute("aria-label", "选择要比较的旧卡");
+    matches.forEach(({old}, i) => {
+      element("option", [getCardDisplayName(old), getCardCreator(old), old.group, old.fileName].filter(Boolean).join(" · "), select).value = i;
+    });
+    select.hidden = matches.length === 1;
+    const body = element("section", "", dialog);
+    let answer = {action:"skip"};
+    function render() {
+      body.replaceChildren();
+      const {old, changes} = matches[Number(select.value)];
+      const pictures = element("div", "", body);
+      pictures.className = "vault-pictures";
+      for (const [label, item] of [["已收藏", old], ["本次导入", card]]) {
+        const box = element("div", "", pictures);
+        if (item.coverImage) {
+          const img = element("img","",box);
+          img.src = item.coverImage;
+          img.alt = label + "封面";
+        } else element("span", "无封面", box);
+        element("strong", label + " · " + getCardDisplayName(item), box);
+        element("small", getCardCreator(item), box);
+      }
+      element("p", changes.length ? changes.join("、") : "卡片资料相同，本次文件带有另一份封面。", body);
+      if (changes.length && old.edited) element("p", "更新旧卡会替换你在工具箱里编辑过的角色资料。", body);
+      const buttons = element("div","",body);
+      buttons.className = "vault-actions";
+      for (const [action, label] of [["skip","跳过"],["add","另存一张"],[changes.length ? "update" : "cover",changes.length ? "更新这张旧卡" : "只换封面"]]) {
+        const btn = element("button",label,buttons);
+        btn.onclick = () => { answer = {action, old}; dialog.close(); };
+      }
+    }
+    select.onchange = render;
+    render();
+    document.body.append(dialog);
+    dialog.onclose = () => {dialog.remove(); resolve(answer);};
+    dialog.showModal();
+    body.querySelector("button").focus();
+  });
+}
 // src/App.tsx
 import { Fragment, jsx, jsxs } from "react/jsx-runtime";
 function estimateTokens(text) {
@@ -5323,43 +5558,69 @@ ${wb.content || ""}`;
     showToast("\u590D\u5236\u5931\u8D25\uFF0C\u8BF7\u957F\u6309\u6587\u672C\u624B\u52A8\u590D\u5236", "error");
     return false;
   };
+  const [showScan,setShowScan]=useState(false);
+  const importBusy = useRef(false);
+  const [lastDuplicate, setLastDuplicate] = useState(null);
   const handleFileUpload = async (files) => {
-    const fileArr = Array.from(files);
-    if (fileArr.length === 0) return;
-    let successCount = 0;
-    let failCount = 0;
-    let pendingBatch = [];
-    const total = fileArr.length;
-    const showProgress = total > 8;
-    const BATCH_SIZE = 6;
-    const groupForNewCards = currentGroup !== "\u5168\u90E8" ? currentGroup : "\u9ED8\u8BA4";
-    if (showProgress) showToast(`\u5F00\u59CB\u5BFC\u5165 ${total} \u4E2A\u6587\u4EF6\u2026`, "info");
-    for (let i = 0; i < fileArr.length; i++) {
-      const file = fileArr[i];
-      try {
-        const card = await parseCardFile(file);
-        card.group = groupForNewCards;
-        pendingBatch.push(card);
-        successCount++;
-      } catch (err) {
-        failCount++;
-        showToast(`\u6587\u4EF6 "${file.name}" \u89E3\u6790\u5931\u8D25: ${err.message}`, "error");
-      }
-      const isLast = i === fileArr.length - 1;
-      if (pendingBatch.length >= BATCH_SIZE || isLast) {
-        if (pendingBatch.length > 0) {
-          const batch = pendingBatch;
-          pendingBatch = [];
-          updateAppData((prev) => ({ ...prev, cards: [...prev.cards, ...batch] }));
+    const list = Array.from(files);
+    if (!list.length || !appDataHydrated) return;
+    if (importBusy.current) return showToast("正在导入上一批角色卡", "info");
+    importBusy.current = true;
+    setLastDuplicate(null);
+    const known = new Map(appData.cards.map(c => [c.id, c]));
+    const profiles = new WeakMap();
+    const profile = c => {
+      if (!profiles.has(c)) profiles.set(c, cardProfile(c));
+      return profiles.get(c);
+    };
+    let added = 0, skipped = 0, updated = 0, failed = 0;
+    try {
+      for (const file of list) {
+        try {
+          const card = await parseCardFile(file);
+          const incoming = profile(card);
+          const matches = [];
+          let identical;
+          for (const old of known.values()) {
+            const saved = profile(old);
+            const same = saved.signature === incoming.signature;
+            if (same && await sameCoverImage(old.coverImage, card.coverImage)) {
+              identical = old;
+              break;
+            }
+            if (same || incoming.names.some(name => saved.names.includes(name))) {
+              matches.push({old, changes: same ? [] : cardChanges(saved.fields, incoming.fields)});
+            }
+          }
+          if (identical) {
+            skipped++;
+            setLastDuplicate({id: identical.id, name: getCardDisplayName(identical)});
+            continue;
+          }
+          matches.sort((a,b) => a.changes.length - b.changes.length);
+          const {action,old} = matches.length ? await reviewCardImport(card, matches) : {action:"add"};
+          if (action === "skip") {skipped++; continue;}
+          if (action === "add") {
+            card.group = currentGroup === "全部" ? "默认" : currentGroup;
+            known.set(card.id, card);
+            updateAppData(prev => ({...prev, cards:[...prev.cards, card]}));
+            added++;
+          } else {
+            const at=Date.now();
+            const apply=c=>recordRevision(c,action==="cover"?{coverImage:card.coverImage}:importedPatch(c,card),action==="cover"?"更换封面":"导入更新",at);
+            const next=apply(old);
+            known.set(old.id,next);
+            updateAppData(prev=>({...prev,cards:prev.cards.map(c=>c.id===old.id?(c===old?next:apply(c)):c)}));
+            updated++;
+          }
+        } catch (err) {
+          failed++;
+          showToast(file.name + " 导入失败：" + err.message, "error");
         }
-        if (showProgress && !isLast) showToast(`\u6B63\u5728\u5BFC\u5165 ${i + 1}/${total} \u4E2A\u6587\u4EF6\u2026`, "info");
-        await new Promise((resolve) => setTimeout(resolve, 0));
       }
-    }
-    if (successCount > 0) {
-      showToast(`\u6210\u529F\u5BFC\u5165 ${successCount} \u5F20\u89D2\u8272\u5361\uFF01${failCount > 0 ? `\uFF08${failCount} \u4E2A\u5931\u8D25\uFF09` : ""}`, "success");
-    } else if (failCount > 0) {
-      showToast(`\u5BFC\u5165\u5931\u8D25\uFF1A${failCount} \u4E2A\u6587\u4EF6\u5747\u65E0\u6CD5\u89E3\u6790`, "error");
+      showToast(["新增 " + added + " 张", updated && "更新 " + updated + " 张", skipped && "跳过 " + skipped + " 张", failed && "失败 " + failed + " 个"].filter(Boolean).join(" · "), failed ? "info" : "success");
+    } finally {
+      importBusy.current = false;
     }
   };
   const handleDeleteCard = (id) => {
@@ -5460,24 +5721,8 @@ ${wb.content || ""}`;
     if (cardIndex === -1) return;
     try {
       const updatedCardParsed = await parseCardFile(file);
-      const existingCard = appData.cards[cardIndex];
-      const overwrittenCard = {
-        ...existingCard,
-        name: updatedCardParsed.name,
-        fileName: updatedCardParsed.fileName,
-        fileType: updatedCardParsed.fileType,
-        version: updatedCardParsed.version,
-        author: updatedCardParsed.authorManual ? existingCard.author : updatedCardParsed.author,
-        rawData: updatedCardParsed.rawData,
-        coverImage: updatedCardParsed.coverImage || existingCard.coverImage,
-        editHistory: {},
-        // Reset edit history as rawData is newly updated
-        edited: false,
-        updatedAt: Date.now()
-      };
-      const updatedCards = [...appData.cards];
-      updatedCards[cardIndex] = overwrittenCard;
-      updateAppData({ ...appData, cards: updatedCards });
+      const at=Date.now();
+      updateAppData(prev=>({...prev,cards:prev.cards.map(c=>c.id===detailCardId?recordRevision(c,importedPatch(c,updatedCardParsed),"文件覆盖更新",at):c)}));
       showToast("\u89D2\u8272\u5361\u8986\u76D6\u66F4\u65B0\u6210\u529F\uFF01", "success");
     } catch (err) {
       showToast(`\u8986\u76D6\u66F4\u65B0\u5931\u8D25: ${err.message}`, "error");
@@ -5908,6 +6153,11 @@ ${item.details}`], { type: "text/plain;charset=utf-8" });
     ] });
   };
   return /* @__PURE__ */ jsxs("div", { className: "min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 flex flex-col font-sans antialiased selection:bg-zinc-800 selection:text-white", children: [
+    showScan && jsx(ScanPanel,{cards:appData.cards,close:()=>setShowScan(false),merge:(keep,other)=>updateAppData(prev=>({...prev,cards:combineDuplicates(prev.cards,keep,other)}))}),
+    lastDuplicate && !detailCardId && jsx("div", {className:"vault-duplicate", role:"status", children:[
+      jsx("button",{onClick:()=>{setDetailCardId(lastDuplicate.id);setLastDuplicate(null);},children:"已收藏「"+lastDuplicate.name+"」 · 查看旧卡"}),
+      jsx("button",{"aria-label":"关闭提醒",onClick:()=>setLastDuplicate(null),children:"×"})
+    ]}),
     !appDataHydrated && /* @__PURE__ */ jsx("div", { className: "fixed inset-0 z-[200] flex items-center justify-center bg-zinc-50/95 dark:bg-zinc-950/95 backdrop-blur-sm", children: /* @__PURE__ */ jsxs("div", { className: "flex flex-col items-center gap-3 text-zinc-500 dark:text-zinc-400", children: [
       /* @__PURE__ */ jsx(RefreshCw, { className: "w-5 h-5 animate-spin" }),
       /* @__PURE__ */ jsx("span", { className: "text-sm", children: "\u6B63\u5728\u52A0\u8F7D\u672C\u5730\u6570\u636E\u2026" })
@@ -6272,6 +6522,7 @@ ${item.details}`], { type: "text/plain;charset=utf-8" });
               ]
             }
           ),
+          jsx("button",{className:"vh-link",onClick:()=>setShowScan(true),children:"整理重复卡"}),
           /* @__PURE__ */ jsxs("div", { className: "space-y-3", children: [
             /* @__PURE__ */ jsxs("div", { className: "flex flex-col sm:flex-row gap-2.5 items-stretch sm:items-center justify-between", children: [
               /* @__PURE__ */ jsxs("div", { className: "relative flex-1", children: [
@@ -9092,6 +9343,7 @@ ${item.details}`], { type: "text/plain;charset=utf-8" });
       ] }),
       /* @__PURE__ */ jsx("div", { className: "flex border-b border-zinc-200 dark:border-zinc-800 px-6 gap-2 overflow-x-auto flex-shrink-0 bg-white dark:bg-zinc-900 scrollbar-none", children: [
         { id: "overview", name: "\u6982\u89C8" },
+        { id:"history",name:"版本记录" },
         { id: "greetings", name: "\u5F00\u573A\u767D" },
         { id: "worldbook", name: "\u4E16\u754C\u4E66" },
         { id: "regex", name: "\u6B63\u5219" },
@@ -9108,6 +9360,10 @@ ${item.details}`], { type: "text/plain;charset=utf-8" });
         tab.id
       )) }),
       /* @__PURE__ */ jsxs("div", { className: "flex-1 overflow-y-auto p-6 space-y-6", children: [
+        detailTab==="history" && jsx(VersionPanel,{card:activeDetailCard,copy:copyTextReliable,restore:snapshot=>{
+          const at=Date.now();
+          updateAppData(prev=>({...prev,cards:prev.cards.map(c=>c.id===activeDetailCard.id?recordRevision(c,snapshot,"恢复历史版本",at):c)}));
+        }},activeDetailCard.id),
         detailTab === "overview" && /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-1 md:grid-cols-12 gap-6", children: [
           /* @__PURE__ */ jsx("div", { className: "md:col-span-8 space-y-4" }),
           /* @__PURE__ */ jsxs("div", { className: "md:col-span-4 space-y-4", children: [
@@ -9131,10 +9387,8 @@ ${item.details}`], { type: "text/plain;charset=utf-8" });
                   const file = e.target.files?.[0];
                   if (file) {
                     const original = await fileToDataURL(file);
-                    const updatedCards = appData.cards.map(
-                      (c) => c.id === activeDetailCard.id ? { ...c, coverImage: original } : c
-                    );
-                    updateAppData({ ...appData, cards: updatedCards });
+                    const at=Date.now();
+                    updateAppData(prev=>({...prev,cards:prev.cards.map(c=>c.id===activeDetailCard.id?recordRevision(c,{coverImage:original},"更换封面",at):c)}));
                     showToast("\u5C01\u9762\u66F4\u65B0\u6210\u529F", "success");
                   }
                   e.target.value = "";
