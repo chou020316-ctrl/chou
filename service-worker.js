@@ -1,4 +1,4 @@
-const CACHE_NAME = "st-vault-shell-v11-4";
+const CACHE_NAME = "st-vault-shell-v11-5";
 // v11.3：React 等依赖来自 esm.sh，单独缓存，换版本时不删除，断网也能打开
 const LIB_CACHE = "st-vault-libs-v1";
 const LIB_PREFIXES = ["https://esm.sh/"];

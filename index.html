@@ -1306,6 +1306,41 @@ function VaultThumb({ id, src, alt, className }) {
   if (!thumb) return hVault("div", { className: "v113-thumb-wait", role: "img", "aria-label": alt });
   return hVault("img", { src: thumb, alt, className, loading: "lazy", decoding: "async" });
 }
+/* v11.5：只有 iPhone / iPad 走分享菜单，安卓等其他设备直接下载 */
+function v115IsAppleMobile() {
+  try { return /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1); } catch { return false; }
+}
+const V115_TEMP_KEY = "vault-pending-temp-backups";
+function v115ForgetTemp(fileName) {
+  try { localStorage.setItem(V115_TEMP_KEY, JSON.stringify(JSON.parse(localStorage.getItem(V115_TEMP_KEY) || "[]").filter((n) => n !== fileName))); } catch {}
+}
+function v115ScheduleTempCleanup(root, fileName) {
+  try {
+    const list = JSON.parse(localStorage.getItem(V115_TEMP_KEY) || "[]");
+    if (!list.includes(fileName)) list.push(fileName);
+    localStorage.setItem(V115_TEMP_KEY, JSON.stringify(list));
+  } catch {}
+  setTimeout(() => { root?.removeEntry?.(fileName)?.then(() => v115ForgetTemp(fileName)).catch(() => {}); }, 15 * 6e4);
+}
+async function v115CleanupTemps() {
+  let list = [];
+  try { list = JSON.parse(localStorage.getItem(V115_TEMP_KEY) || "[]"); } catch {}
+  if (!list.length || !navigator.storage?.getDirectory) return;
+  try {
+    const root = await navigator.storage.getDirectory();
+    for (const name of list) { try { await root.removeEntry(name); } catch {} v115ForgetTemp(name); }
+  } catch {}
+}
+function v115Download(file, fileName) {
+  const url = URL.createObjectURL(file);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 12e4);
+}
 const V113_BACKUP_KEY = "vault-last-backup";
 const V113_SNOOZE_KEY = "vault-backup-snooze-until";
 const V113_DAY = 864e5;
@@ -2387,21 +2422,28 @@ function App() {
         lastModified: Date.now()
       });
       const shareData = { files: [shareFile] };
-      if (typeof navigator.share === "function" && (!navigator.canShare || navigator.canShare(shareData))) {
-        await navigator.share(shareData);
-      } else {
-        const url = URL.createObjectURL(prepared.file);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = prepared.fileName;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        setTimeout(() => URL.revokeObjectURL(url), 3e4);
+      let viaDownload = true;
+      if (v115IsAppleMobile() && typeof navigator.share === "function" && (!navigator.canShare || navigator.canShare(shareData))) {
+        try {
+          await navigator.share(shareData);
+          viaDownload = false;
+        } catch (shareErr) {
+          if (shareErr?.name === "AbortError") throw shareErr;
+          console.warn("Share failed, falling back to download", shareErr);
+        }
+      }
+      if (viaDownload) {
+        v115Download(prepared.file, prepared.fileName);
       }
       markVaultBackup(prepared.backupKind || "stream");
-      showToast(prepared.backupKind === "cards" ? "角色卡单文件备份已交给系统保存" : "全库单文件备份已交给系统保存", "success");
-      await closeStreamBackup();
+      showToast(viaDownload ? "已开始下载备份，可以在手机的「下载」文件夹里找到" : prepared.backupKind === "cards" ? "角色卡单文件备份已交给系统保存" : "全库单文件备份已交给系统保存", "success");
+      if (viaDownload) {
+        streamCardBackupFileRef.current = null;
+        setStreamCardBackupProgress(null);
+        v115ScheduleTempCleanup(prepared.root, prepared.fileName);
+      } else {
+        await closeStreamBackup();
+      }
     } catch (err) {
       if (err?.name === "AbortError") return;
       console.error("Save streaming card backup failed", err);
@@ -6053,7 +6095,7 @@ ${wb.content || ""}`;
   };
   useEffect(() => {
     if (!appDataHydrated) return;
-    const t = setTimeout(() => { void v113PruneThumbs((loadAppData().cards || []).map((c) => c.id)); }, 8000);
+    const t = setTimeout(() => { void v113PruneThumbs((loadAppData().cards || []).map((c) => c.id)); void v115CleanupTemps(); }, 8000);
     return () => clearTimeout(t);
   }, [appDataHydrated]);
   useEffect(() => {
@@ -18548,7 +18590,7 @@ ${item.details}`], { type: "text/plain;charset=utf-8" });
           /* @__PURE__ */ jsx("div", { className: "text-xs text-emerald-700/70 dark:text-emerald-400/70 mt-1 break-all", children: streamCardBackupProgress.fileName }),
           /* @__PURE__ */ jsx("div", { className: "text-xs text-emerald-700/70 dark:text-emerald-400/70 mt-1", children: formatBackupFileSize(streamCardBackupProgress.fileSize) })
         ] }),
-        /* @__PURE__ */ jsx("p", { className: "text-xs leading-relaxed text-zinc-500 dark:text-zinc-400", children: streamCardBackupProgress.backupKind === "cards" ? "点击下面的按钮，在 iPhone 分享菜单中选择“存储到文件”。此文件只包含 ST 角色卡和角色卡分组。保存完成后，网页中的临时副本会自动清理。" : "点击下面的按钮，在 iPhone 分享菜单中选择“存储到文件”。该文件包含全部板块、字体及 API 存储，请妥善保管。保存完成后，网页中的临时副本会自动清理。" }),
+        /* @__PURE__ */ jsx("p", { className: "text-xs leading-relaxed text-zinc-500 dark:text-zinc-400", children: streamCardBackupProgress.backupKind === "cards" ? (v115IsAppleMobile() ? "点击下面的按钮，在 iPhone 分享菜单中选择“存储到文件”。" : "点击下面的按钮，文件会直接下载到手机的「下载」文件夹。") + "此文件只包含 ST 角色卡和角色卡分组。保存完成后，网页中的临时副本会自动清理。" : (v115IsAppleMobile() ? "点击下面的按钮，在 iPhone 分享菜单中选择“存储到文件”。" : "点击下面的按钮，文件会直接下载到手机的「下载」文件夹。") + "该文件包含全部板块、字体及 API 存储，请妥善保管。保存完成后，网页中的临时副本会自动清理。" }),
         /* @__PURE__ */ jsxs("div", { className: "flex gap-2", children: [
           /* @__PURE__ */ jsx("button", { onClick: closeStreamBackup, className: "flex-1 px-4 py-2.5 text-xs font-medium rounded-xl border border-zinc-200 dark:border-zinc-700", children: "取消" }),
           /* @__PURE__ */ jsx("button", { onClick: savePreparedStreamCardBackup, className: "flex-[1.6] px-4 py-2.5 text-xs font-bold rounded-xl bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900", children: "保存这一个备份文件" })
