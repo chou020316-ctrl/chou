@@ -214,11 +214,47 @@ html, body, #root {
 .vault-review::backdrop{background:#10101899}.vault-review h2{font-size:1.15rem;font-weight:bold}.vault-review small,.vault-review strong{display:block}.vault-review select{max-width:100%;margin-top:10px;color:inherit;background:Canvas}.vault-pictures,.vault-actions{display:flex;gap:8px;margin:12px 0}.vault-pictures>div{flex:1;min-width:0}.vault-pictures img,.vault-pictures span{display:grid;place-items:center;width:100%;height:100px;object-fit:contain;background:#8882;border-radius:8px}.vault-actions{flex-wrap:wrap;margin-bottom:0}.vault-actions button,.vault-duplicate button{padding:8px;border:1px solid #8886;border-radius:8px}.vault-duplicate{position:fixed;z-index:110;bottom:max(20px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);display:flex;width:max-content;max-width:92vw;align-items:center;background:Canvas;color:CanvasText;border-radius:9px;box-shadow:0 2px 12px #0003}.vault-duplicate button:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 </style><style>
 .vault-history{display:grid;gap:10px;font-size:14px;overflow-wrap:anywhere}.vault-history article{border:1px solid #8885;border-radius:12px;padding:12px;min-width:0}.vault-history small,.vault-history strong{display:block}.vault-history pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:40vh;overflow:auto;padding:8px;background:#8881;font-size:13px}.vault-history details{margin:.6em 0}.vault-history summary{cursor:pointer}.vh-link,.vh-row{padding:8px;text-align:left;border:1px solid #8885;border-radius:8px}.vh-row{width:100%;border:none}.vh-link:disabled{opacity:.4}.vh-cover{width:100%;max-height:150px;object-fit:contain}.vh-overlay{position:fixed;inset:0;z-index:220;display:grid;place-items:center;background:#0007;padding:12px}.vh-panel{background:Canvas;color:CanvasText;color-scheme:light dark;max-height:88dvh;overflow:auto;width:min(100%,520px);padding:18px;border-radius:14px}.vh-pair{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}.vault-history h2{font-size:1.2rem;font-weight:bold}
-</style><style>.vh-scan-tabs{display:flex;gap:4px;flex-wrap:wrap}.vh-scan-tabs [aria-pressed="true"]{background:CanvasText;color:Canvas;font-weight:bold}</style></head>
+</style><style>.vh-scan-tabs{display:flex;gap:4px;flex-wrap:wrap}.vh-scan-tabs [aria-pressed="true"]{background:CanvasText;color:Canvas;font-weight:bold}</style><style>.vt-header{display:flex;align-items:center;justify-content:space-between}.vt-hide{font-size:12px;text-decoration:underline;padding:6px 0}.vault-history input[type=search]{width:100%;background:Canvas;color:CanvasText}</style><style>
+.v10-close{width:40px;height:40px;color:#898994;font-size:26px;line-height:1;border:0;background:none}.v10-foot{position:sticky;bottom:0;z-index:2;display:flex;gap:5px;padding:7px 0;background:Canvas;color:CanvasText}.v10-foot button{flex:1;text-align:center;font-size:13px}.v10-diff ins{background:#b8edd1;color:#173923}.v10-diff del{background:#ffd1d4;color:#662a30}.v10-diff article{padding:5px}.v10-front{z-index:240}.v10-pick{display:flex;align-items:center;gap:10px;text-align:left;border-bottom:1px solid #8884;padding:6px}.v10-pick img{width:44px;height:56px;object-fit:cover;border-radius:5px}.v10-pick small{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.v10-draw{white-space:nowrap;font-size:12px}.vh-overlay,.vault-review{overscroll-behavior:contain}
+@media(max-width:500px){header[data-vault-header="st-cards"]{height:auto;min-height:3.5rem;flex-wrap:wrap;gap:3px;padding:5px 8px}header[data-vault-header="st-cards"]>div{gap:3px}}
+</style></head>
   <body>
     <div id="root"></div>
 
-    <script type="module">
+    <script>/* jsdiff
+BSD 3-Clause License
+
+Copyright (c) 2009-2015, Kevin Decker <kpdecker@gmail.com>
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this
+   list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
+
+3. Neither the name of the copyright holder nor the names of its
+   contributors may be used to endorse or promote products derived from
+   this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
+((global,factory)=>{"object"==typeof exports&&"undefined"!=typeof module?factory(exports):"function"==typeof define&&define.amd?define(["exports"],factory):factory((global="undefined"!=typeof globalThis?globalThis:global||self).Diff={})})(this,function(exports){class Diff{diff(oldStr,newStr,options={}){let callback;"function"==typeof options?(callback=options,options={}):"callback"in options&&(callback=options.callback);oldStr=this.castInput(oldStr,options),newStr=this.castInput(newStr,options),oldStr=this.removeEmpty(this.tokenize(oldStr,options)),newStr=this.removeEmpty(this.tokenize(newStr,options));return this.diffWithOptionsObj(oldStr,newStr,options,callback)}diffWithOptionsObj(oldTokens,newTokens,options,callback){let _a,done=value=>{if(value=this.postProcess(value,options),!callback)return value;setTimeout(function(){callback(value)},0)},newLen=newTokens.length,oldLen=oldTokens.length,editLength=1,maxEditLength=newLen+oldLen;null!=options.maxEditLength&&(maxEditLength=Math.min(maxEditLength,options.maxEditLength));var maxExecutionTime=null!=(_a=options.timeout)?_a:1/0;let abortAfterTimestamp=Date.now()+maxExecutionTime,bestPath=[{oldPos:-1,lastComponent:void 0}],newPos=this.extractCommon(bestPath[0],newTokens,oldTokens,0,options);if(bestPath[0].oldPos+1>=oldLen&&newPos+1>=newLen)return done(this.buildValues(bestPath[0].lastComponent,newTokens,oldTokens));let minDiagonalToConsider=-1/0,maxDiagonalToConsider=1/0,execEditLength=()=>{for(let diagonalPath=Math.max(minDiagonalToConsider,-editLength);diagonalPath<=Math.min(maxDiagonalToConsider,editLength);diagonalPath+=2){let basePath;var removePath=bestPath[diagonalPath-1],addPath=bestPath[diagonalPath+1];removePath&&(bestPath[diagonalPath-1]=void 0);let canAdd=!1;addPath&&(addPathNewPos=addPath.oldPos-diagonalPath,canAdd=addPath&&0<=addPathNewPos&&addPathNewPos<newLen);var addPathNewPos=removePath&&removePath.oldPos+1<oldLen;if(canAdd||addPathNewPos){if(basePath=!addPathNewPos||canAdd&&removePath.oldPos<addPath.oldPos?this.addToPath(addPath,!0,!1,0,options):this.addToPath(removePath,!1,!0,1,options),newPos=this.extractCommon(basePath,newTokens,oldTokens,diagonalPath,options),basePath.oldPos+1>=oldLen&&newPos+1>=newLen)return done(this.buildValues(basePath.lastComponent,newTokens,oldTokens))||!0;(bestPath[diagonalPath]=basePath).oldPos+1>=oldLen&&(maxDiagonalToConsider=Math.min(maxDiagonalToConsider,diagonalPath-1)),newPos+1>=newLen&&(minDiagonalToConsider=Math.max(minDiagonalToConsider,diagonalPath+1))}else bestPath[diagonalPath]=void 0}editLength++};if(callback)!function exec(){setTimeout(function(){if(editLength>maxEditLength||Date.now()>abortAfterTimestamp)return callback(void 0);execEditLength()||exec()},0)}();else for(;editLength<=maxEditLength&&Date.now()<=abortAfterTimestamp;){var ret=execEditLength();if(ret)return ret}}addToPath(path,added,removed,oldPosInc,options){var last=path.lastComponent;return last&&!options.oneChangePerToken&&last.added===added&&last.removed===removed?{oldPos:path.oldPos+oldPosInc,lastComponent:{count:last.count+1,added:added,removed:removed,previousComponent:last.previousComponent}}:{oldPos:path.oldPos+oldPosInc,lastComponent:{count:1,added:added,removed:removed,previousComponent:last}}}extractCommon(basePath,newTokens,oldTokens,diagonalPath,options){var newLen=newTokens.length,oldLen=oldTokens.length;let oldPos=basePath.oldPos,newPos=oldPos-diagonalPath,commonCount=0;for(;newPos+1<newLen&&oldPos+1<oldLen&&this.equals(oldTokens[oldPos+1],newTokens[newPos+1],options);)newPos++,oldPos++,commonCount++,options.oneChangePerToken&&(basePath.lastComponent={count:1,previousComponent:basePath.lastComponent,added:!1,removed:!1});return commonCount&&!options.oneChangePerToken&&(basePath.lastComponent={count:commonCount,previousComponent:basePath.lastComponent,added:!1,removed:!1}),basePath.oldPos=oldPos,newPos}equals(left,right,options){return options.comparator?options.comparator(left,right):left===right||!!options.ignoreCase&&left.toLowerCase()===right.toLowerCase()}removeEmpty(array){var ret=[];for(let i=0;i<array.length;i++)array[i]&&ret.push(array[i]);return ret}castInput(value,options){return value}tokenize(value,options){return Array.from(value)}join(chars){return chars.join("")}postProcess(changeObjects,options){return changeObjects}get useLongestToken(){return!1}buildValues(lastComponent,newTokens,oldTokens){for(var nextComponent,components=[];lastComponent;)components.push(lastComponent),nextComponent=lastComponent.previousComponent,delete lastComponent.previousComponent,lastComponent=nextComponent;components.reverse();var componentLen=components.length;let componentPos=0,newPos=0,oldPos=0;for(;componentPos<componentLen;componentPos++){var component=components[componentPos];if(component.removed)component.value=this.join(oldTokens.slice(oldPos,oldPos+component.count)),oldPos+=component.count;else{if(!component.added&&this.useLongestToken){let value=newTokens.slice(newPos,newPos+component.count);value=value.map(function(value,i){i=oldTokens[oldPos+i];return i.length>value.length?i:value}),component.value=this.join(value)}else component.value=this.join(newTokens.slice(newPos,newPos+component.count));newPos+=component.count,component.added||(oldPos+=component.count)}}return components}}class CharacterDiff extends Diff{}let characterDiff=new CharacterDiff;function longestCommonPrefix(str1,str2){let i;for(i=0;i<str1.length&&i<str2.length;i++)if(str1[i]!=str2[i])return str1.slice(0,i);return str1.slice(0,i)}function longestCommonSuffix(str1,str2){let i;if(!str1||!str2||str1[str1.length-1]!=str2[str2.length-1])return"";for(i=0;i<str1.length&&i<str2.length;i++)if(str1[str1.length-(i+1)]!=str2[str2.length-(i+1)])return str1.slice(-i);return str1.slice(-i)}function replacePrefix(string,oldPrefix,newPrefix){if(string.slice(0,oldPrefix.length)!=oldPrefix)throw Error(`string ${JSON.stringify(string)} doesn't start with prefix ${JSON.stringify(oldPrefix)}; this is a bug`);return newPrefix+string.slice(oldPrefix.length)}function replaceSuffix(string,oldSuffix,newSuffix){if(!oldSuffix)return string+newSuffix;if(string.slice(-oldSuffix.length)!=oldSuffix)throw Error(`string ${JSON.stringify(string)} doesn't end with suffix ${JSON.stringify(oldSuffix)}; this is a bug`);return string.slice(0,-oldSuffix.length)+newSuffix}function removePrefix(string,oldPrefix){return replacePrefix(string,oldPrefix,"")}function removeSuffix(string,oldSuffix){return replaceSuffix(string,oldSuffix,"")}function maximumOverlap(string1,string2){return string2.slice(0,((a,b)=>{let startA=0,endB=(a.length>b.length&&(startA=a.length-b.length),b.length),map=(a.length<b.length&&(endB=a.length),Array(endB)),k=0;map[0]=0;for(let j=1;j<endB;j++){for(b[j]==b[k]?map[j]=map[k]:map[j]=k;0<k&&b[j]!=b[k];)k=map[k];b[j]==b[k]&&k++}k=0;for(let i=startA;i<a.length;i++){for(;0<k&&a[i]!=b[k];)k=map[k];a[i]==b[k]&&k++}return k})(string1,string2))}function segment(string,segmenter){var segmentObj,parts=[];for(segmentObj of Array.from(segmenter.segment(string))){var segment=segmentObj.segment;parts.length&&/\s/.test(parts[parts.length-1])&&/\s/.test(segment)?parts[parts.length-1]+=segment:parts.push(segment)}return parts}function trailingWs(string,segmenter){if(segmenter)return leadingAndTrailingWs(string,segmenter)[1];let i;for(i=string.length-1;0<=i&&string[i].match(/\s/);i--);return string.substring(i+1)}function leadingWs(string,segmenter){return segmenter?leadingAndTrailingWs(string,segmenter)[0]:(segmenter=string.match(/^\s*/))?segmenter[0]:""}function leadingAndTrailingWs(string,segmenter){if(!segmenter)return[leadingWs(string),trailingWs(string)];if("word"!=segmenter.resolvedOptions().granularity)throw new Error('The segmenter passed must have a granularity of "word"');string=segment(string,segmenter),segmenter=string[0],string=string[string.length-1];return[/\s/.test(segmenter)?segmenter:"",/\s/.test(string)?string:""]}let extendedWordChars="a-zA-Z0-9_\\u{AD}\\u{C0}-\\u{D6}\\u{D8}-\\u{F6}\\u{F8}-\\u{2C6}\\u{2C8}-\\u{2D7}\\u{2DE}-\\u{2FF}\\u{1E00}-\\u{1EFF}",tokenizeIncludingWhitespace=new RegExp(`[${extendedWordChars}]+|\\s+|[^${extendedWordChars}]`,"ug");class WordDiff extends Diff{equals(left,right,options){return options.ignoreCase&&(left=left.toLowerCase(),right=right.toLowerCase()),left.trim()===right.trim()}tokenize(value,options={}){let parts;if(options.intlSegmenter){options=options.intlSegmenter;if("word"!=options.resolvedOptions().granularity)throw new Error('The segmenter passed must have a granularity of "word"');parts=segment(value,options)}else parts=value.match(tokenizeIncludingWhitespace)||[];let tokens=[],prevPart=null;return parts.forEach(part=>{/\s/.test(part)?null==prevPart?tokens.push(part):tokens.push(tokens.pop()+part):null!=prevPart&&/\s/.test(prevPart)?tokens[tokens.length-1]==prevPart?tokens.push(tokens.pop()+part):tokens.push(prevPart+part):tokens.push(part),prevPart=part}),tokens}join(tokens){return tokens.map((token,i)=>0==i?token:token.replace(/^\s+/,"")).join("")}postProcess(changes,options){if(changes&&!options.oneChangePerToken){let lastKeep=null,insertion=null,deletion=null;changes.forEach(change=>{change.added?insertion=change:deletion=change.removed?change:((insertion||deletion)&&dedupeWhitespaceInChangeObjects(lastKeep,deletion,insertion,change,options.intlSegmenter),lastKeep=change,insertion=null)}),(insertion||deletion)&&dedupeWhitespaceInChangeObjects(lastKeep,deletion,insertion,null,options.intlSegmenter)}return changes}}let wordDiff=new WordDiff;function dedupeWhitespaceInChangeObjects(startKeep,deletion,insertion,endKeep,segmenter){if(deletion&&insertion){var[oldWsPrefix,oldWsSuffix]=leadingAndTrailingWs(deletion.value,segmenter),[newWsPrefix,newWsSuffix]=leadingAndTrailingWs(insertion.value,segmenter);startKeep&&(oldWsPrefix=longestCommonPrefix(oldWsPrefix,newWsPrefix),startKeep.value=replaceSuffix(startKeep.value,newWsPrefix,oldWsPrefix),deletion.value=removePrefix(deletion.value,oldWsPrefix),insertion.value=removePrefix(insertion.value,oldWsPrefix)),endKeep&&(newWsPrefix=longestCommonSuffix(oldWsSuffix,newWsSuffix),endKeep.value=replacePrefix(endKeep.value,newWsSuffix,newWsPrefix),deletion.value=removeSuffix(deletion.value,newWsPrefix),insertion.value=removeSuffix(insertion.value,newWsPrefix))}else if(insertion){if(startKeep&&(oldWsPrefix=leadingWs(insertion.value,segmenter),insertion.value=insertion.value.substring(oldWsPrefix.length)),endKeep){let ws=leadingWs(endKeep.value,segmenter);endKeep.value=endKeep.value.substring(ws.length)}}else if(startKeep&&endKeep){var oldWsSuffix=leadingWs(endKeep.value,segmenter),[newWsSuffix,newWsPrefix]=leadingAndTrailingWs(deletion.value,segmenter),insertion=longestCommonPrefix(oldWsSuffix,newWsSuffix),oldWsPrefix=(deletion.value=removePrefix(deletion.value,insertion),longestCommonSuffix(removePrefix(oldWsSuffix,insertion),newWsPrefix));deletion.value=removeSuffix(deletion.value,oldWsPrefix),endKeep.value=replacePrefix(endKeep.value,oldWsSuffix,oldWsPrefix),startKeep.value=replaceSuffix(startKeep.value,oldWsSuffix,oldWsSuffix.slice(0,oldWsSuffix.length-oldWsPrefix.length))}else if(endKeep){newWsSuffix=leadingWs(endKeep.value,segmenter),insertion=maximumOverlap(trailingWs(deletion.value,segmenter),newWsSuffix);deletion.value=removeSuffix(deletion.value,insertion)}else if(startKeep){let overlap=maximumOverlap(trailingWs(startKeep.value,segmenter),leadingWs(deletion.value,segmenter));deletion.value=removePrefix(deletion.value,overlap)}}class WordsWithSpaceDiff extends Diff{tokenize(value){var regex=new RegExp(`(\\r?\\n)|[${extendedWordChars}]+|[^\\S\\n\\r]+|[^${extendedWordChars}]`,"ug");return value.match(regex)||[]}}let wordsWithSpaceDiff=new WordsWithSpaceDiff;function diffWordsWithSpace(oldStr,newStr,options){return wordsWithSpaceDiff.diff(oldStr,newStr,options)}class LineDiff extends Diff{constructor(){super(...arguments),this.tokenize=tokenize}equals(left,right,options){return options.ignoreWhitespace?(options.newlineIsToken&&left.includes("\n")||(left=left.trim()),options.newlineIsToken&&right.includes("\n")||(right=right.trim())):options.ignoreNewlineAtEof&&!options.newlineIsToken&&(left.endsWith("\n")&&(left=left.slice(0,-1)),right.endsWith("\n"))&&(right=right.slice(0,-1)),super.equals(left,right,options)}}let lineDiff=new LineDiff;function diffLines(oldStr,newStr,options){return lineDiff.diff(oldStr,newStr,options)}function tokenize(value,options){var retLines=[],linesAndNewlines=(value=options.stripTrailingCr?value.replace(/\r\n/g,"\n"):value).split(/(\n|\r\n)/);linesAndNewlines[linesAndNewlines.length-1]||linesAndNewlines.pop();for(let i=0;i<linesAndNewlines.length;i++){var line=linesAndNewlines[i];i%2&&!options.newlineIsToken?retLines[retLines.length-1]+=line:retLines.push(line)}return retLines}class SentenceDiff extends Diff{tokenize(value){var _a,char,result=[];let tokenStartI=0;for(let i=0;i<value.length;i++){if(i==value.length-1){result.push(value.slice(tokenStartI));break}if(("."==(char=value[i])||"!"==char||"?"==char)&&value[i+1].match(/\s/)){for(result.push(value.slice(tokenStartI,i+1)),i=tokenStartI=i+1;null!=(_a=value[i+1])&&_a.match(/\s/);)i++;result.push(value.slice(tokenStartI,i+1)),tokenStartI=i+1}}return result}}let sentenceDiff=new SentenceDiff;class CssDiff extends Diff{tokenize(value){return value.split(/([{}:;,]|\s+)/)}}let cssDiff=new CssDiff;class JsonDiff extends Diff{constructor(){super(...arguments),this.tokenize=tokenize}get useLongestToken(){return!0}castInput(value,options){let{undefinedReplacement,stringifyReplacer=(k,v)=>void 0===v?undefinedReplacement:v}=options;return"string"==typeof value?value:JSON.stringify(canonicalize(value,null,null,stringifyReplacer),null,"  ")}equals(left,right,options){return super.equals(left.replace(/,([\r\n])/g,"$1"),right.replace(/,([\r\n])/g,"$1"),options)}}let jsonDiff=new JsonDiff;function canonicalize(obj,stack,replacementStack,replacer,key){stack=stack||[],replacementStack=replacementStack||[],replacer&&(obj=replacer(void 0===key?"":key,obj));let i;for(i=0;i<stack.length;i+=1)if(stack[i]===obj)return replacementStack[i];let canonicalizedObj;if("[object Array]"===Object.prototype.toString.call(obj)){for(stack.push(obj),canonicalizedObj=new Array(obj.length),replacementStack.push(canonicalizedObj),i=0;i<obj.length;i+=1)canonicalizedObj[i]=canonicalize(obj[i],stack,replacementStack,replacer,String(i));stack.pop(),replacementStack.pop()}else if("object"==typeof(obj=obj&&obj.toJSON?obj.toJSON():obj)&&null!==obj){stack.push(obj),canonicalizedObj={},replacementStack.push(canonicalizedObj);var sortedKeys=[];let key;for(key in obj)Object.prototype.hasOwnProperty.call(obj,key)&&sortedKeys.push(key);for(sortedKeys.sort(),i=0;i<sortedKeys.length;i+=1)key=sortedKeys[i],canonicalizedObj[key]=canonicalize(obj[key],stack,replacementStack,replacer,key);stack.pop(),replacementStack.pop()}else canonicalizedObj=obj;return canonicalizedObj}class ArrayDiff extends Diff{tokenize(value){return value.slice()}join(value){return value}removeEmpty(value){return value}}let arrayDiff=new ArrayDiff;function parsePatch(uniDiff){let diffstr=uniDiff.split(/\n/),list=[],i=0;function parseIndex(){var index={};for(list.push(index);i<diffstr.length;){var line=diffstr[i];if(/^(---|\+\+\+|@@)\s/.test(line))break;var headerMatch=/^(?:Index:|diff(?: -r \w+)+)\s+/.exec(line);headerMatch&&(index.index=line.substring(headerMatch[0].length).trim()),i++}for(parseFileHeader(index),parseFileHeader(index),index.hunks=[];i<diffstr.length;){let line=diffstr[i];if(/^(Index:\s|diff\s|---\s|\+\+\+\s|===================================================================)/.test(line))break;if(/^@@/.test(line))index.hunks.push((()=>{var chunkHeaderIndex=i,chunkHeaderLine=diffstr[i++],hunk={oldStart:+(chunkHeaderLine=chunkHeaderLine.split(/@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/))[1],oldLines:void 0===chunkHeaderLine[2]?1:+chunkHeaderLine[2],newStart:+chunkHeaderLine[3],newLines:void 0===chunkHeaderLine[4]?1:+chunkHeaderLine[4],lines:[]};0===hunk.oldLines&&(hunk.oldStart+=1),0===hunk.newLines&&(hunk.newStart+=1);let addCount=0,removeCount=0;for(;i<diffstr.length&&(removeCount<hunk.oldLines||addCount<hunk.newLines||null!=(_a=diffstr[i])&&_a.startsWith("\\"));i++){var _a=0==diffstr[i].length&&i!=diffstr.length-1?" ":diffstr[i][0];if("+"!==_a&&"-"!==_a&&" "!==_a&&"\\"!==_a)throw new Error(`Hunk at line ${chunkHeaderIndex+1} contained invalid line `+diffstr[i]);hunk.lines.push(diffstr[i]),"+"===_a?addCount++:"-"===_a?removeCount++:" "===_a&&(addCount++,removeCount++)}if(addCount||1!==hunk.newLines||(hunk.newLines=0),removeCount||1!==hunk.oldLines||(hunk.oldLines=0),addCount!==hunk.newLines)throw new Error("Added line count did not match for hunk at line "+(chunkHeaderIndex+1));if(removeCount===hunk.oldLines)return hunk;throw new Error("Removed line count did not match for hunk at line "+(chunkHeaderIndex+1))})());else{if(line)throw new Error("Unknown line "+(i+1)+" "+JSON.stringify(line));i++}}}function parseFileHeader(index){var fileHeaderMatch=/^(---|\+\+\+)\s+/.exec(diffstr[i]);if(fileHeaderMatch){var fileHeaderMatch=fileHeaderMatch[1],data=diffstr[i].substring(3).trim().split("\t",2),header=(data[1]||"").trim();let fileName=data[0].replace(/\\\\/g,"\\");fileName.startsWith('"')&&fileName.endsWith('"')&&(fileName=fileName.substr(1,fileName.length-2)),"---"===fileHeaderMatch?(index.oldFileName=fileName,index.oldHeader=header):(index.newFileName=fileName,index.newHeader=header),i++}}for(;i<diffstr.length;)parseIndex();return list}function applyPatch(source,patch,options={}){let patches;if(1<(patches="string"==typeof patch?parsePatch(patch):Array.isArray(patch)?patch:[patch]).length)throw new Error("applyPatch only works with a single input.");return((source,patch,options={})=>{!options.autoConvertLineEndings&&null!=options.autoConvertLineEndings||((string=>string.includes("\r\n")&&!string.startsWith("\n")&&!string.match(/[^\r]\n/))(source)&&(patch=>!(patch=Array.isArray(patch)?patch:[patch]).some(index=>index.hunks.some(hunk=>hunk.lines.some(line=>!line.startsWith("\\")&&line.endsWith("\r")))))(patch)?patch=function unixToWin(patch){return Array.isArray(patch)?patch.map(p=>unixToWin(p)):Object.assign(Object.assign({},patch),{hunks:patch.hunks.map(hunk=>Object.assign(Object.assign({},hunk),{lines:hunk.lines.map((line,i)=>line.startsWith("\\")||line.endsWith("\r")||null!=(i=hunk.lines[i+1])&&i.startsWith("\\")?line:line+"\r")}))})}(patch):(string=>!string.includes("\r\n")&&string.includes("\n"))(source)&&(patch=>(patch=Array.isArray(patch)?patch:[patch]).some(index=>index.hunks.some(hunk=>hunk.lines.some(line=>line.endsWith("\r"))))&&patch.every(index=>index.hunks.every(hunk=>hunk.lines.every((line,i)=>line.startsWith("\\")||line.endsWith("\r")||(null==(line=hunk.lines[i+1])?void 0:line.startsWith("\\"))))))(patch)&&(patch=function winToUnix(patch){return Array.isArray(patch)?patch.map(p=>winToUnix(p)):Object.assign(Object.assign({},patch),{hunks:patch.hunks.map(hunk=>Object.assign(Object.assign({},hunk),{lines:hunk.lines.map(line=>line.endsWith("\r")?line.substring(0,line.length-1):line)}))})}(patch)));let lines=source.split("\n"),hunks=patch.hunks,compareLine=options.compareLine||((lineNumber,line,operation,patchContent)=>line===patchContent),fuzzFactor=options.fuzzFactor||0,minLine=0;if(fuzzFactor<0||!Number.isInteger(fuzzFactor))throw new Error("fuzzFactor must be a non-negative integer");if(!hunks.length)return source;let prevLine="",removeEOFNL=!1,addEOFNL=!1;for(let i=0;i<hunks[hunks.length-1].lines.length;i++){var line=hunks[hunks.length-1].lines[i];"\\"==line[0]&&("+"==prevLine[0]?removeEOFNL=!0:"-"==prevLine[0]&&(addEOFNL=!0)),prevLine=line}if(removeEOFNL){if(addEOFNL){if(!fuzzFactor&&""==lines[lines.length-1])return!1}else if(""==lines[lines.length-1])lines.pop();else if(!fuzzFactor)return!1}else if(addEOFNL)if(""!=lines[lines.length-1])lines.push("");else if(!fuzzFactor)return!1;let resultLines=[],prevHunkOffset=0;for(let i=0;i<hunks.length;i++){var hunk=hunks[i];let hunkResult;var maxLine=lines.length-hunk.oldLines+fuzzFactor;let toPos;for(let maxErrors=0;maxErrors<=fuzzFactor;maxErrors++){for(var iterator=((start,minLine,maxLine)=>{let wantForward=!0,backwardExhausted=!1,forwardExhausted=!1,localOffset=1;return function iterator(){if(wantForward&&!forwardExhausted){if(backwardExhausted?localOffset++:wantForward=!1,start+localOffset<=maxLine)return start+localOffset;forwardExhausted=!0}if(!backwardExhausted)return forwardExhausted||(wantForward=!0),minLine<=start-localOffset?start-localOffset++:(backwardExhausted=!0,iterator())}})(toPos=hunk.oldStart+prevHunkOffset-1,minLine,maxLine);void 0!==toPos&&!(hunkResult=function applyHunk(hunkLines,toPos,maxErrors,hunkLinesI=0,lastContextLineMatched=!0,patchedLines=[],patchedLinesLength=0){let nConsecutiveOldContextLines=0,nextContextLineMustMatch=!1;for(;hunkLinesI<hunkLines.length;hunkLinesI++){var operation=0<(hunkLine=hunkLines[hunkLinesI]).length?hunkLine[0]:" ",hunkLine=0<hunkLine.length?hunkLine.substr(1):hunkLine;if("-"===operation){if(!compareLine(toPos+1,lines[toPos],operation,hunkLine))return maxErrors&&null!=lines[toPos]?(patchedLines[patchedLinesLength]=lines[toPos],applyHunk(hunkLines,toPos+1,maxErrors-1,hunkLinesI,!1,patchedLines,patchedLinesLength+1)):null;toPos++,nConsecutiveOldContextLines=0}if("+"===operation){if(!lastContextLineMatched)return null;patchedLines[patchedLinesLength]=hunkLine,patchedLinesLength++,nConsecutiveOldContextLines=0,nextContextLineMustMatch=!0}if(" "===operation){if(nConsecutiveOldContextLines++,patchedLines[patchedLinesLength]=lines[toPos],!compareLine(toPos+1,lines[toPos],operation,hunkLine))return nextContextLineMustMatch||!maxErrors?null:lines[toPos]&&(applyHunk(hunkLines,toPos+1,maxErrors-1,hunkLinesI+1,!1,patchedLines,patchedLinesLength+1)||applyHunk(hunkLines,toPos+1,maxErrors-1,hunkLinesI,!1,patchedLines,patchedLinesLength+1))||applyHunk(hunkLines,toPos,maxErrors-1,hunkLinesI+1,!1,patchedLines,patchedLinesLength);patchedLinesLength++,lastContextLineMatched=!0,nextContextLineMustMatch=!1,toPos++}}return patchedLinesLength-=nConsecutiveOldContextLines,toPos-=nConsecutiveOldContextLines,patchedLines.length=patchedLinesLength,{patchedLines:patchedLines,oldLineLastI:toPos-1}}(hunk.lines,toPos,maxErrors));toPos=iterator());if(hunkResult)break}if(!hunkResult)return!1;for(let i=minLine;i<toPos;i++)resultLines.push(lines[i]);for(let i=0;i<hunkResult.patchedLines.length;i++){var line=hunkResult.patchedLines[i];resultLines.push(line)}minLine=hunkResult.oldLineLastI+1,prevHunkOffset=toPos+1-hunk.oldStart}for(let i=minLine;i<lines.length;i++)resultLines.push(lines[i]);return resultLines.join("\n")})(source,patches[0],options)}let INCLUDE_HEADERS={includeIndex:!0,includeUnderline:!0,includeFileHeaders:!0};function structuredPatch(oldFileName,newFileName,oldStr,newStr,oldHeader,newHeader,options){let optionsObj,context=(void 0===(optionsObj=options?"function"==typeof options?{callback:options}:options:{}).context&&(optionsObj.context=4),optionsObj.context);if(optionsObj.newlineIsToken)throw new Error("newlineIsToken may not be used with patch-generation functions, only with diffing functions");if(!optionsObj.callback)return diffLinesResultToPatch(diffLines(oldStr,newStr,optionsObj));{let callback=optionsObj.callback;diffLines(oldStr,newStr,Object.assign(Object.assign({},optionsObj),{callback:diff=>{diff=diffLinesResultToPatch(diff);callback(diff)}}))}function diffLinesResultToPatch(diff){if(diff){diff.push({value:"",lines:[]});var hunks=[];let oldRangeStart=0,newRangeStart=0,curRange=[],oldLine=1,newLine=1;for(let i=0;i<diff.length;i++){var line,current=diff[i],lines=current.lines||(text=>{var hasTrailingNl=text.endsWith("\n"),text=text.split("\n").map(line=>line+"\n");return hasTrailingNl?text.pop():text.push(text.pop().slice(0,-1)),text})(current.value);if(current.lines=lines,current.added||current.removed){oldRangeStart||(prev=diff[i-1],oldRangeStart=oldLine,newRangeStart=newLine,prev&&(curRange=0<context?contextLines(prev.lines.slice(-context)):[],oldRangeStart-=curRange.length,newRangeStart-=curRange.length));for(line of lines)curRange.push((current.added?"+":"-")+line);current.added?newLine+=lines.length:oldLine+=lines.length}else{if(oldRangeStart)if(lines.length<=2*context&&i<diff.length-2)for(let line of contextLines(lines))curRange.push(line);else{var prev=Math.min(lines.length,context);for(let line of contextLines(lines.slice(0,prev)))curRange.push(line);var hunk={oldStart:oldRangeStart,oldLines:oldLine-oldRangeStart+prev,newStart:newRangeStart,newLines:newLine-newRangeStart+prev,lines:curRange};hunks.push(hunk),oldRangeStart=0,newRangeStart=0,curRange=[]}oldLine+=lines.length,newLine+=lines.length}}for(let hunk of hunks)for(let i=0;i<hunk.lines.length;i++)hunk.lines[i].endsWith("\n")?hunk.lines[i]=hunk.lines[i].slice(0,-1):(hunk.lines.splice(i+1,0,"\\ No newline at end of file"),i++);return{oldFileName:oldFileName,newFileName:newFileName,oldHeader:oldHeader,newHeader:newHeader,hunks:hunks};function contextLines(lines){return lines.map(function(entry){return" "+entry})}}}}function formatPatch(patch,headerOptions){if(headerOptions=headerOptions||INCLUDE_HEADERS,Array.isArray(patch)){if(1<patch.length&&!headerOptions.includeFileHeaders)throw new Error("Cannot omit file headers on a multi-file patch. (The result would be unparseable; how would a tool trying to apply the patch know which changes are to which file?)");return patch.map(p=>formatPatch(p,headerOptions)).join("\n")}var ret=[];headerOptions.includeIndex&&patch.oldFileName==patch.newFileName&&ret.push("Index: "+patch.oldFileName),headerOptions.includeUnderline&&ret.push("==================================================================="),headerOptions.includeFileHeaders&&(ret.push("--- "+patch.oldFileName+(void 0===patch.oldHeader?"":"\t"+patch.oldHeader)),ret.push("+++ "+patch.newFileName+(void 0===patch.newHeader?"":"\t"+patch.newHeader)));for(let i=0;i<patch.hunks.length;i++){var line,hunk=patch.hunks[i];0===hunk.oldLines&&--hunk.oldStart,0===hunk.newLines&&--hunk.newStart,ret.push("@@ -"+hunk.oldStart+","+hunk.oldLines+" +"+hunk.newStart+","+hunk.newLines+" @@");for(line of hunk.lines)ret.push(line)}return ret.join("\n")+"\n"}function createTwoFilesPatch(oldFileName,newFileName,oldStr,newStr,oldHeader,newHeader,options){if(null!=(options="function"==typeof options?{callback:options}:options)&&options.callback){let callback=options.callback;structuredPatch(oldFileName,newFileName,oldStr,newStr,oldHeader,newHeader,Object.assign(Object.assign({},options),{callback:patchObj=>{patchObj?callback(formatPatch(patchObj,options.headerOptions)):callback(void 0)}}))}else{oldFileName=structuredPatch(oldFileName,newFileName,oldStr,newStr,oldHeader,newHeader,options);if(oldFileName)return formatPatch(oldFileName,null==options?void 0:options.headerOptions)}}exports.Diff=Diff,exports.FILE_HEADERS_ONLY={includeIndex:!1,includeUnderline:!1,includeFileHeaders:!0},exports.INCLUDE_HEADERS=INCLUDE_HEADERS,exports.OMIT_HEADERS={includeIndex:!1,includeUnderline:!1,includeFileHeaders:!1},exports.applyPatch=applyPatch,exports.applyPatches=function(uniDiff,options){let spDiff="string"==typeof uniDiff?parsePatch(uniDiff):uniDiff,currentIndex=0;!function processIndex(){let index=spDiff[currentIndex++];if(!index)return options.complete();options.loadFile(index,function(err,data){if(err)return options.complete(err);err=applyPatch(data,index,options),options.patched(index,err,function(err){if(err)return options.complete(err);processIndex()})})}()},exports.arrayDiff=arrayDiff,exports.canonicalize=canonicalize,exports.characterDiff=characterDiff,exports.convertChangesToDMP=function(changes){var ret=[];let change,operation;for(let i=0;i<changes.length;i++)change=changes[i],operation=change.added?1:change.removed?-1:0,ret.push([operation,change.value]);return ret},exports.convertChangesToXML=function(changes){var ret=[];for(let i=0;i<changes.length;i++){var change=changes[i];change.added?ret.push("<ins>"):change.removed&&ret.push("<del>"),ret.push((s=>{let n=s;return n=(n=(n=(n=n.replace(/&/g,"&amp;")).replace(/</g,"&lt;")).replace(/>/g,"&gt;")).replace(/"/g,"&quot;")})(change.value)),change.added?ret.push("</ins>"):change.removed&&ret.push("</del>")}return ret.join("")},exports.createPatch=function(fileName,oldStr,newStr,oldHeader,newHeader,options){return createTwoFilesPatch(fileName,fileName,oldStr,newStr,oldHeader,newHeader,options)},exports.createTwoFilesPatch=createTwoFilesPatch,exports.cssDiff=cssDiff,exports.diffArrays=function(oldArr,newArr,options){return arrayDiff.diff(oldArr,newArr,options)},exports.diffChars=function(oldStr,newStr,options){return characterDiff.diff(oldStr,newStr,options)},exports.diffCss=function(oldStr,newStr,options){return cssDiff.diff(oldStr,newStr,options)},exports.diffJson=function(oldStr,newStr,options){return jsonDiff.diff(oldStr,newStr,options)},exports.diffLines=diffLines,exports.diffSentences=function(oldStr,newStr,options){return sentenceDiff.diff(oldStr,newStr,options)},exports.diffTrimmedLines=function(oldStr,newStr,options){return options=((options,defaults)=>{if("function"==typeof options)defaults.callback=options;else if(options)for(var name in options)Object.prototype.hasOwnProperty.call(options,name)&&(defaults[name]=options[name]);return defaults})(options,{ignoreWhitespace:!0}),lineDiff.diff(oldStr,newStr,options)},exports.diffWords=function(oldStr,newStr,options){return null==(null==options?void 0:options.ignoreWhitespace)||options.ignoreWhitespace?wordDiff.diff(oldStr,newStr,options):diffWordsWithSpace(oldStr,newStr,options)},exports.diffWordsWithSpace=diffWordsWithSpace,exports.formatPatch=formatPatch,exports.jsonDiff=jsonDiff,exports.lineDiff=lineDiff,exports.parsePatch=parsePatch,exports.reversePatch=function reversePatch(structuredPatch){return Array.isArray(structuredPatch)?structuredPatch.map(patch=>reversePatch(patch)).reverse():Object.assign(Object.assign({},structuredPatch),{oldFileName:structuredPatch.newFileName,oldHeader:structuredPatch.newHeader,newFileName:structuredPatch.oldFileName,newHeader:structuredPatch.oldHeader,hunks:structuredPatch.hunks.map(hunk=>({oldLines:hunk.newLines,oldStart:hunk.newStart,newLines:hunk.oldLines,newStart:hunk.oldStart,lines:hunk.lines.map(l=>l.startsWith("-")?"+"+l.slice(1):l.startsWith("+")?"-"+l.slice(1):l)}))})},exports.sentenceDiff=sentenceDiff,exports.structuredPatch=structuredPatch,exports.wordDiff=wordDiff,exports.wordsWithSpaceDiff=wordsWithSpaceDiff});
+</script>
+<script type="module">
 var __defProp = Object.defineProperty;
 var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
 var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
@@ -1177,14 +1213,109 @@ function fieldText(value) {
   if (value === undefined) return "（无此字段）";
   return typeof value==="string" ? value || "（空）" : JSON.stringify(value,null,2);
 }
-function FieldComparison({before,after}) {
-  const [open,setOpen]=useState("");
-  const a=revisionFields(before), b=revisionFields(after);
-  const keys=[...new Set([...Object.keys(a),...Object.keys(b)])].filter(k=>stableCardJSON(a[k])!==stableCardJSON(b[k]));
-  return hVault("div",null,...keys.map(k=>hVault("div",{key:k},
-    hVault("button",{className:"vh-link",onClick:()=>setOpen(open===k?"":k)},(open===k?"▾ ":"▸ ")+(fieldLabels[k]||k)),
-    open===k && hVault("div",null,...[["之前",a[k]],["之后",b[k]]].map(([label,v])=>hVault("div",{key:label},hVault("small",null,label),hVault("pre",null,fieldText(v))))))),
-    before.coverImage!==after.coverImage && hVault("p",null,"封面有变化"));
+function textEdits(a,b){
+  if(a===b) return [{value:a}];
+  const options={timeout:24,maxEditLength:900};
+  const fine=Diff.diffChars(a,b,options);
+  if(fine) return fine;
+  const lines=s=>s.match(/[^。！？\n]{1,240}[。！？\n]?|[。！？\n]/gu)||[];
+  return Diff.diffArrays(lines(a),lines(b),options)?.map(x=>({...x,value:x.value.join("")})) || [{value:a,removed:true},{value:b,added:true}];
+}
+function unitList(fields){
+  const units=[];
+  function push(group,name,body,meta={},id=""){
+    units.push({group,name,body:String(body??""),meta:stableCardJSON(meta),id,index:units.filter(x=>x.group===group).length});
+  }
+  for(const [key,v] of Object.entries(fields)){
+    if(key==="alternate_greetings" && Array.isArray(v)) v.forEach(x=>push("备用开场白","",x));
+    else if(key==="character_book" && v && typeof v==="object"){
+      const {entries,...rest}=v;
+      push("属性","世界书设置","",rest);
+      for(const [i,e] of Object.entries(entries||{})){
+        if(!e || typeof e!=="object")continue;
+        const {content,comment,name,id,uid,...settings}=e;
+        push("世界书",String(comment||name||""),content,{...settings,comment,name,id,uid},String(uid??id??""));
+      }
+    }else if(["description","personality","scenario","first_mes","mes_example","system_prompt","post_history_instructions","creator_notes"].includes(key)){
+      push("正文",fieldLabels[key]||key,v);
+    }else push("属性",fieldLabels[key]||key,"",v);
+  }
+  return units;
+}
+function compareCards(left,right){
+  const A=unitList(revisionFields(left)), B=unitList(revisionFields(right)), used=new Set(), links=new Map();
+  const lists=x=>x.group==="备用开场白"||x.group==="世界书";
+  function match(test){
+    for(const b of B){
+      if(links.has(b))continue;
+      const candidates=A.filter(a=>!used.has(a)&&a.group===b.group&&test(a,b));
+      if(candidates.length!==1)continue;
+      const a=candidates[0];
+      if(B.some(c=>c!==b&&!links.has(c)&&c.group===a.group&&test(a,c)))continue;
+      links.set(b,a);used.add(a);
+    }
+  }
+  // Pair identical list items first, including repeated entries.
+  for(const b of B.filter(lists)){
+    const a=A.find(x=>!used.has(x)&&x.group===b.group&&x.name===b.name&&x.body===b.body&&x.meta===b.meta);
+    if(a){used.add(a);links.set(b,a);}
+  }
+  match((a,b)=>a.name===b.name && (!lists(a)||a.body===b.body));
+  match((a,b)=>lists(a)&&a.body!==""&&a.body===b.body);
+  match((a,b)=>a.group==="世界书"&&a.name&&a.name===b.name);
+  match((a,b)=>a.group==="世界书"&&a.id&&a.id===b.id&&(!a.name||!b.name));
+  match((a,b)=>a.group==="备用开场白"&&a.body.length>=16&&b.body.length>=16&&(a.body.slice(0,12)===b.body.slice(0,12)||a.body.slice(-12)===b.body.slice(-12)));
+  const rows=[];let added=0,removed=0,same=0;
+  function describe(a,b){
+    const u=b||a, edits=textEdits(a?.body||"",b?.body||"");
+    let plus=0,minus=0;
+    for(const e of edits){
+      const n=Array.from(e.value.replace(/\s/g,"")).length;
+      if(e.added)plus+=n;else if(e.removed)minus+=n;else same+=n;
+    }
+    added+=plus;removed+=minus;
+    const unmatched=lists(u)&&(!a||!b)&&(a?B.some(x=>x.group===u.group&&!links.has(x)):A.some(x=>x.group===u.group&&!used.has(x)));
+    let status;
+    if(!a)status=unmatched?"待确认 · 对照卡独有":"新增";
+    else if(!b)status=unmatched?"待确认 · 基准卡独有":"删除";
+    else if(a.body!==b.body||a.meta!==b.meta||a.name!==b.name)status="修改";
+    else if(lists(u)&&B.some(peer=>peer.group===b.group && links.has(peer) &&
+      (peer.index-b.index)*(links.get(peer).index-a.index)<0))status="仅调整顺序";
+    if(!status)return;
+    const name=lists(u)?u.group+" · "+(u.name||u.body.trim().slice(0,18)||"第 "+(u.index+1)+" 条"):u.name;
+    rows.push({name,group:u.group,status,plus,minus,edits,a,b});
+  }
+  B.forEach(b=>describe(links.get(b),b)); A.filter(a=>!used.has(a)).forEach(a=>describe(a,null));
+  if(left.coverImage!==right.coverImage)rows.push({name:"封面",group:"属性",status:"图片数据变化",edits:[],plus:0,minus:0});
+  const total=same+removed, next=same+added;
+  return {rows,added,removed,total,next,similar:total+next?100*2*same/(total+next):null};
+}
+function diffLabel(d){
+  return d.rows.map(r=>r.status+" "+r.name).join("；") || "内容相同";
+}
+function OverlayHead({title,close}){
+  return hVault("div",{className:"vt-header"},hVault("h2",null,title),hVault("button",{className:"v10-close","aria-label":"关闭",onClick:close},"×"));
+}
+function ChangeRow({r}){
+  const [show,setShow]=useState(false);
+  const pos=r.a&&r.b&&r.a.index!==r.b.index&&["世界书","备用开场白"].includes(r.group)?" · 第 "+(r.a.index+1)+" → "+(r.b.index+1)+" 条":"";
+  return hVault("article",null,hVault("button",{className:"vh-row",onClick:()=>setShow(!show)},r.status+" · "+r.name+pos+(r.plus||r.minus?"（+"+r.plus+" / −"+r.minus+" 字）":"")),
+    show&&hVault("div",null,r.edits.map((e,i)=>hVault(e.added?"ins":e.removed?"del":"span",{key:i},!e.added&&!e.removed&&e.value.length>96?e.value.slice(0,36)+" … "+e.value.slice(-36):e.value)),
+      r.a&&r.b&&r.a.meta!==r.b.meta&&hVault("pre",null,Diff.diffChars(r.a.meta||"",r.b.meta||"",{maxEditLength:400,timeout:12})?.map((e,i)=>hVault(e.added?"ins":e.removed?"del":"span",{key:i},!e.added&&!e.removed&&e.value.length>80?e.value.slice(0,30)+" … "+e.value.slice(-30):e.value))||"设置有修改，展开查看"),
+      ["a","b"].map((side,i)=>r[side]&&hVault("details",{key:side},hVault("summary",null,(i?"对照":"基准")+"全文及设置"),hVault("pre",null,r[side].body+"\n"+(r[side].meta||""))))));
+}
+function FieldComparison({before,after,direction="当前版相对上一版",part="all",comparison}){
+  const d=React2.useMemo(()=>comparison||compareCards(before,after),[comparison,before,after]);
+  const net=d.next-d.total;
+  const pct=d.total?(net>0?"+":"")+(100*net/d.total).toFixed(1)+"%":"无基准";
+  return hVault("section",{className:"vault-history v10-diff"},part!=="rows" && hVault("strong",null,direction),
+    part!=="rows" && hVault("p",null,"文本相似度约 "+(d.similar===null?"—":d.similar.toFixed(1)+"%")+" · 篇幅净变化 "+pct),
+    part!=="rows" && hVault("small",null,d.total+" → "+d.next+" 字 · 新增 "+d.added+" 字，删去 "+d.removed+" 字"),
+    part!=="rows" && ["备用开场白","世界书"].map(group=>{
+      const losses=d.rows.filter(r=>r.group===group && r.status==="删除");
+      return losses.length ? hVault("strong",{key:group},"整条删除 · "+group+" "+losses.length+" 条") : null;
+    }),
+    ...(part==="summary"?[]:d.rows).slice().sort((a,b)=>Number(b.status==="删除")-Number(a.status==="删除")).map((r,i)=>hVault(ChangeRow,{key:r.name+i,r})));
 }
 function revisionName(c) {
   const d=c.rawData?.data || c.rawData || {};
@@ -1215,6 +1346,97 @@ function ArchivedCard({card,copy}) {
   const [expanded,setExpanded]=useState(false);
   return hVault("div",null,hVault("button",{className:"vh-link",onClick:()=>setExpanded(!expanded)},"查看来源卡记录"),expanded && hVault(VersionPanel,{card,copy}));
 }
+const themeWords={
+  "仙侠":["仙侠","修仙","修真","筑基","剑修","渡劫","灵根"],
+  "宗门":["宗门","剑宗","外门弟子","内门弟子"],
+  "古风":["古风","古代","大理寺","侯府","丞相","仵作","王府","朝堂"],
+  "探案":["探案","查案","办案","断案","悬案","仵作","验尸","案发现场","侦探"],
+  "校园":["校园","同桌","班主任","高三","高中生","大学生","学生会"],
+  "现代都市":["现代都市","都市","写字楼","都市白领","地铁站"],
+  "宫廷":["宫廷","后宫","皇后","太子","御书房"],
+  "武侠":["武侠","江湖","武林","镖局","武林盟主"],
+  "末世":["末世","末日废土","丧尸","末日求生"],
+  "星际":["星际","星舰","机甲","银河帝国"],
+  "西幻":["西幻","魔法学院","精灵族","魔法师","龙骑士"],
+  "无限流":["无限流","轮回空间","主神空间","恐怖副本"],
+  "娱乐圈":["娱乐圈","经纪人","影帝","练习生","偶像团体"],
+  "青梅竹马":["青梅竹马","两小无猜","发小"]
+};
+const themeCache=new WeakMap();
+function themeIndex(card) {
+  if(themeCache.has(card)) return themeCache.get(card);
+  const sections=[];
+  function add(label,text,weight) {
+    if(typeof text!=="string" || !text.trim()) return;
+    sections.push({label,text,lower:text.toLowerCase(),weight});
+  }
+  const d=card.rawData?.data || card.rawData || {};
+  add("已有标签",getCardTags(card).join("、"),6);
+  add("角色描述",getCardDescription(card),5);
+  add("场景",card.editHistory?.scenario ?? d.scenario,5);
+  add("性格",card.editHistory?.personality ?? d.personality,4);
+  add("第一条开场白",getCardGreeting(card),3);
+  const alts=getCardAlternateGreetings(card);
+  if(Array.isArray(alts)) alts.forEach((v,i)=>add("备用开场白 "+(i+1),v,2));
+  const entries=getCardWorldBook(card)?.entries;
+  if(entries && typeof entries==="object") Object.values(entries).forEach((e,i)=>{
+    if(e?.enabled!==false) add("世界书 · "+(e?.comment || e?.name || (i+1)),e?.content,1);
+  });
+  const hits=new Map();
+  for(const [label,words] of Object.entries(themeWords)){
+    const hit=themeEvidence(sections,words);
+    if(hit) hits.set(label,hit);
+  }
+  const result={sections,hits};themeCache.set(card,result);return result;
+}
+function themeEvidence(sections,words){
+  let best=null;
+  for(const s of sections){
+    let at=-1, count=0;
+    for(const word of words){
+      const pos=s.lower.indexOf(word);
+      if(pos>=0){count++;at=at<0?pos:Math.min(at,pos);}
+    }
+    if(at<0) continue;
+    const score=s.weight*10+Math.min(9,count);
+    if(!best || score>best.score) best={score,label:s.label,snippet:(at>24?"…":"")+s.text.slice(Math.max(0,at-24),at+56).replace(/\s+/g," ")+(at+56<s.text.length?"…":"")};
+  }
+  return best;
+}
+function themeMatches(card,terms){
+  const {sections,hits}=themeIndex(card);
+  const evidence=[];
+  for(const t of terms){
+    const standard=Object.keys(themeWords).find(k=>k===t || themeWords[k].includes(t));
+    if(standard && card.hiddenThemeTags?.includes(standard)) return null;
+    const hit=standard ? hits.get(standard) : themeEvidence(sections,[t]);
+    if(!hit) return null;
+    evidence.push({...hit,term:standard||t});
+  }
+  return {card,evidence,score:evidence.reduce((sum,h)=>sum+h.score,0)};
+}
+function ThemeFinder({cards,close,open,hideTag,draw}){
+  const [query,setQuery]=useState("");
+  const [selected,setSelected]=useState([]);
+  const [limit,setLimit]=useState(20);
+  const terms=[...new Set([...selected,...query.trim().toLowerCase().split(/[\s，,、]+/).filter(Boolean)])];
+  const matches=React2.useMemo(()=>terms.length?cards.map(c=>themeMatches(c,terms)).filter(Boolean).sort((a,b)=>b.score-a.score):[],[cards,query,selected]);
+  const toggle=k=>{setSelected(selected.includes(k)?selected.filter(x=>x!==k):[...selected,k]);setLimit(20);};
+  return hVault("div",{className:"vh-overlay"},hVault("section",{className:"vh-panel vault-history",role:"dialog","aria-modal":true,"aria-label":"关键词搜索"},
+    hVault(OverlayHead,{title:"关键词搜索",close}),
+    hVault("input",{className:"vh-link",type:"search",value:query,"aria-label":"输入题材或剧情关键词",placeholder:"输入题材或剧情词，如 修仙、探案",onChange:e=>{setQuery(e.target.value);setLimit(20);}}),
+    hVault("div",{className:"vh-scan-tabs"},...Object.keys(themeWords).map(k=>hVault("button",{key:k,className:"vh-link","aria-pressed":selected.includes(k),onClick:()=>toggle(k)},k))),
+    !terms.length ? hVault("p",null,"点选类型或输入关键词。选多个时，只显示每项都有线索的卡。") :
+    hVault("p",{role:"status"},matches.length?"找到 "+matches.length+" 张卡":"没有找到，可以减少条件或换个词。"),
+    matches.length>0 && hVault("button",{className:"vh-link",onClick:()=>draw(matches.map(m=>m.card))},"从结果里抽五张"),
+    ...matches.slice(0,limit).map(({card,evidence})=>hVault("article",{key:card.id},
+      hVault("button",{className:"vh-link",onClick:()=>open(card.id)},getCardDisplayName(card)+" ›"),
+      ...evidence.map((e,i)=>hVault("div",{key:i},hVault("small",null,e.term+" · "+e.label),hVault("p",null,e.snippet))),
+      ...evidence.filter(e=>themeWords[e.term] && e.label!=="已有标签").map((e,i)=>hVault("button",{key:"hide"+i,className:"vt-hide",onClick:()=>hideTag(card.id,e.term)},"这张卡不算「"+e.term+"」")))),
+    matches.length>limit && hVault("button",{className:"vh-link",onClick:()=>setLimit(limit+20)},"再显示 20 张"),
+    cards.some(c=>c.hiddenThemeTags?.length) && hVault("details",null,hVault("summary",null,"已排除的类型"),...cards.filter(c=>c.hiddenThemeTags?.length).flatMap(c=>c.hiddenThemeTags.map(k=>hVault("button",{key:c.id+k,className:"vh-link",onClick:()=>hideTag(c.id,k,true)},getCardDisplayName(c)+" · 恢复「"+k+"」"))))));
+}
+
 function ScanPanel({cards,close,merge,mark}) {
   const allPairs=React2.useMemo(()=>scanCardPairs(cards),[cards]);
   const [tab,setTab]=useState("exact");
@@ -1223,9 +1445,11 @@ function ScanPanel({cards,close,merge,mark}) {
   const pairs=groups[tab];
   const [index,setIndex]=useState(0);
   const pos=Math.min(index,pairs.length-1), pair=pairs[pos];
+  const comparison=React2.useMemo(()=>pair?compareCards(pair.a,pair.b):null,[pair?.a,pair?.b]);
   const button=(label,fn,disabled=false)=>hVault("button",{className:"vh-link",onClick:fn,disabled},label);
   return hVault("div",{className:"vh-overlay"},hVault("section",{className:"vh-panel vault-history",role:"dialog","aria-modal":true,"aria-label":"整理重复卡"},
-    hVault("h2",null,"整理重复卡"),button("关闭",close),
+    hVault(OverlayHead,{title:"整理重复卡",close}),
+    pair && hVault(FieldComparison,{comparison,part:"summary",direction:"右卡相对左卡"}),
     hVault("div",{className:"vh-scan-tabs"},...[["exact","资料相同"],["similar","同名待辨认"],["ignored","已区分"]].map(([key,label])=>
       hVault("button",{key,className:"vh-link","aria-pressed":tab===key,onClick:()=>{setTab(key);setIndex(0);}},label+" "+groups[key].length))),
     !pair ? hVault("p",null,({exact:"没有发现卡内资料相同的卡。",similar:"没有待辨认的同名卡。",ignored:"还没有标记为不同作品的卡对。"})[tab]) :
@@ -1235,64 +1459,64 @@ function ScanPanel({cards,close,merge,mark}) {
         hVault("small",null,getCardCreator(c)+" · "+(c.group||"默认")),hVault("small",null,c.fileName),hVault("small",null,"加入卡库："+joinedDate(c.createdAt)),
         hVault("small",null,"标签："+((c.tags||[]).join("、")||"无")),
         hVault("small",null,"截图 "+((c.screenshots?.authorsNote?.length||0)+(c.screenshots?.favoriteScenes?.length||0))+" · 备用封面 "+(c.extraCovers?.length||0)),
-        !pair.ignored && button(n?"保留右边这张":"保留左边这张",()=>{
-          const side=n?"右":"左";
-          if (confirm("保留"+side+"边的「"+getCardDisplayName(c)+"」（加入卡库："+joinedDate(c.createdAt)+"）？另一张将从卡列表移入这张卡的「版本记录 → 合并来源」，可在那里查看原文。")) merge(c.id,n?pair.a.id:pair.b.id);
-        })))),
-      !pair.identical && hVault(FieldComparison,{key:pair.a.id+pair.b.id,before:pair.a,after:pair.b}),
+        hVault("small",null,revisionName(c))))),
+      hVault(FieldComparison,{key:pair.a.id+pair.b.id,comparison,part:"rows",direction:"右卡相对左卡"}),
       (tab==="similar" || tab==="ignored") && button(pair.ignored?"撤销区分":"不同作品，两张都保留",()=>mark(pair.a.id,pair.b.id,!pair.ignored)),
-      button("上一对",()=>setIndex(pos-1),pos===0),button("下一对",()=>setIndex(pos+1),pos===pairs.length-1))));
+      button("上一对",()=>setIndex(pos-1),pos===0),button("下一对",()=>setIndex(pos+1),pos===pairs.length-1),
+      !pair.ignored && hVault("div",{className:"v10-foot"},...[pair.a,pair.b].map((c,i)=>button("保留"+(i?"右":"左")+"卡 · "+(c.createdAt?new Date(c.createdAt).toLocaleDateString("zh-CN",{month:"2-digit",day:"2-digit"}):"未记录"),()=>{
+        if(confirm("保留「"+getCardDisplayName(c)+"」（"+joinedDate(c.createdAt)+"），并将另一张归入版本记录？"))merge(c.id,i?pair.a.id:pair.b.id);
+      }))))));
 }
-function reviewCardImport(card, matches) {
-  return new Promise(resolve => {
-    const dialog = document.createElement("dialog");
-    dialog.className = "vault-review";
-    function element(tag, text, parent) {
-      const el = document.createElement(tag);
-      if (text) el.textContent = text;
-      parent.append(el);
-      return el;
-    }
-    element("h2", "卡库里有相似的角色卡", dialog);
-    element("small", card.fileName, dialog);
-    const select = element("select", "", dialog);
-    select.setAttribute("aria-label", "选择要比较的旧卡");
-    matches.forEach(({old}, i) => {
-      element("option", [getCardDisplayName(old), getCardCreator(old), old.group, old.fileName].filter(Boolean).join(" · "), select).value = i;
-    });
-    select.hidden = matches.length === 1;
-    const body = element("section", "", dialog);
-    let answer = {action:"skip"};
-    function render() {
-      body.replaceChildren();
-      const {old, changes} = matches[Number(select.value)];
-      const pictures = element("div", "", body);
-      pictures.className = "vault-pictures";
-      for (const [label, item] of [["已收藏", old], ["本次导入", card]]) {
-        const box = element("div", "", pictures);
-        if (item.coverImage) {
-          const img = element("img","",box);
-          img.src = item.coverImage;
-          img.alt = label + "封面";
-        } else element("span", "无封面", box);
-        element("strong", label + " · " + getCardDisplayName(item), box);
-        element("small", getCardCreator(item), box);
-      }
-      element("p", changes.length ? changes.join("、") : "卡片资料相同，本次文件带有另一份封面。", body);
-      if (changes.length && old.edited) element("p", "更新旧卡会替换你在工具箱里编辑过的角色资料。", body);
-      const buttons = element("div","",body);
-      buttons.className = "vault-actions";
-      for (const [action, label] of [["skip","跳过"],["add","另存一张"],[changes.length ? "update" : "cover",changes.length ? "更新这张旧卡" : "只换封面"]]) {
-        const btn = element("button",label,buttons);
-        btn.onclick = () => { answer = {action, old}; dialog.close(); };
-      }
-    }
-    select.onchange = render;
-    render();
+function pickFive(pool){
+  const deck=pool.slice();
+  for(let i=0;i<Math.min(5,deck.length);i++){
+    const j=i+Math.floor(Math.random()*(deck.length-i));
+    [deck[i],deck[j]]=[deck[j],deck[i]];
+  }
+  return deck.slice(0,5);
+}
+function FivePanel({pool,open,close}){
+  const [picks,setPicks]=useState(()=>pickFive(pool));
+  return hVault("div",{className:"vh-overlay v10-front"},hVault("section",{className:"vh-panel vault-history"},
+    hVault(OverlayHead,{title:"抽五张",close}),...picks.map(c=>hVault("button",{className:"v10-pick",key:c.id,onClick:()=>open(c.id)},
+      c.coverImage&&hVault("img",{src:c.coverImage,alt:""}),hVault("div",null,hVault("strong",null,getCardDisplayName(c)),hVault("small",null,String(getCardGreeting(c)||getCardDescription(c)||"暂无开场白").slice(0,100))))),
+    hVault("button",{className:"vh-link",onClick:()=>setPicks(pickFive(pool))},"换一批")));
+}
+function SkinManager({data,save,close}){
+  const [error,setError]=useState("");
+  async function importCSS(e){
+    const file=e.target.files?.[0];e.target.value="";
+    if(!file)return;
+    try{
+      const css=await file.text();
+      if(!css.trim()) throw Error("文件为空");
+      await save({...data,items:[...data.items,{id:crypto.randomUUID(),name:file.name,css}]});setError("");
+    }catch(err){setError("导入失败："+err.message);}
+  }
+  return hVault("div",{className:"vh-overlay"},hVault("section",{className:"vh-panel vault-history"},
+    hVault(OverlayHead,{title:"工具箱美化",close}),hVault("label",null,"导入 CSS 文件",hVault("input",{type:"file",accept:".css,text/css",onChange:importCSS})),
+    hVault("button",{className:"vh-link",onClick:()=>save({...data,active:null})},!data.active?"✓ 默认外观":"使用默认外观"),
+    ...data.items.map(s=>hVault("button",{key:s.id,className:"vh-link",onClick:()=>save({...data,active:s.id})},(s.id===data.active?"✓ ":"")+s.name)),error&&hVault("p",null,error)));
+}
+function ImportReview({card,matches,choose}){
+  const [index,setIndex]=useState(0);
+  const {old,changes}=matches[index];
+  const effective=React2.useMemo(()=>card.coverImage?card:{...card,coverImage:old.coverImage},[card,old]);
+  return hVault("div",{className:"vault-history"},hVault("h2",null,"导入角色卡"),hVault("small",null,card.fileName),
+    matches.length>1&&hVault("select",{value:index,"aria-label":"选择库内卡",onChange:e=>setIndex(Number(e.target.value))},...matches.map(({old:c},i)=>hVault("option",{key:c.id,value:i},[getCardDisplayName(c),c.group,c.fileName].join(" · ")))),
+    hVault("div",{className:"vh-pair"},...[old,card].map((c,i)=>hVault("div",{key:i},c.coverImage&&hVault("img",{src:c.coverImage,className:"vh-cover",alt:""}),hVault("strong",null,(i?"本次导入":"库内卡")+" · "+getCardDisplayName(c)),hVault("small",null,revisionName(c))))),
+    hVault(FieldComparison,{before:old,after:effective,direction:"本次导入相对库内卡",key:old.id}),
+    hVault("div",{className:"v10-foot"},...[["skip","跳过"],["add","另存一张"],[changes.length?"update":"cover",changes.length?"更新旧卡":"只换封面"]].map(([action,label])=>hVault("button",{className:"vh-link",key:action,onClick:()=>choose({action,old})},label))));
+}
+function reviewCardImport(card,matches){
+  return new Promise(resolve=>{
+    const dialog=document.createElement("dialog");dialog.className="vault-review";
     document.body.append(dialog);
-    dialog.onclose = () => {dialog.remove(); resolve(answer);};
+    const root=ReactDOM.createRoot(dialog);
+    let result={action:"skip",old:matches[0].old};
+    dialog.onclose=()=>{root.unmount();dialog.remove();resolve(result);};
+    root.render(hVault(ImportReview,{card,matches,choose:value=>{result=value;dialog.close();}}));
     dialog.showModal();
-    body.querySelector("button").focus();
   });
 }
 // src/App.tsx
@@ -5586,6 +5810,19 @@ ${wb.content || ""}`;
     showToast("\u590D\u5236\u5931\u8D25\uFF0C\u8BF7\u957F\u6309\u6587\u672C\u624B\u52A8\u590D\u5236", "error");
     return false;
   };
+  const [fivePool,setFivePool]=useState(null);
+  const [showSkins,setShowSkins]=useState(false);
+  const [skins,setSkins]=useState(null);
+  const [report,setReport]=useState([]);
+  const [showReport,setShowReport]=useState(false);
+  useEffect(()=>{
+    let live=true;
+    get("vault-independent-css").then(v=>{if(live)setSkins(v||{items:[],active:null});}).catch(()=>{if(live)setSkins({items:[],active:null});});
+    get("vault-last-import").then(v=>{if(live&&Array.isArray(v))setReport(prev=>prev.length?prev:v);}).catch(()=>{});
+    return ()=>{live=false;};
+  },[]);
+  const saveSkins=async value=>{try{await set("vault-independent-css",value);setSkins(value);}catch{showToast("美化保存失败","error");}};
+  const [showThemes,setShowThemes]=useState(false);
   const [showScan,setShowScan]=useState(false);
   const importBusy = useRef(false);
   const [lastDuplicate, setLastDuplicate] = useState(null);
@@ -5601,6 +5838,7 @@ ${wb.content || ""}`;
       if (!profiles.has(c)) profiles.set(c, cardProfile(c));
       return profiles.get(c);
     };
+    const log=[];
     let added = 0, skipped = 0, updated = 0, failed = 0;
     try {
       for (const file of list) {
@@ -5621,17 +5859,19 @@ ${wb.content || ""}`;
             }
           }
           if (identical) {
+            log.push({file:file.name,name:getCardDisplayName(card),id:identical.id,status:"已跳过 · 重复卡"});
             skipped++;
             setLastDuplicate({id: identical.id, name: getCardDisplayName(identical)});
             continue;
           }
           matches.sort((a,b) => a.changes.length - b.changes.length);
           const {action,old} = matches.length ? await reviewCardImport(card, matches) : {action:"add"};
-          if (action === "skip") {skipped++; continue;}
+          if (action === "skip") {log.push({file:file.name,name:getCardDisplayName(card),id:old?.id,status:"已跳过"});skipped++; continue;}
           if (action === "add") {
             card.group = currentGroup === "全部" ? "默认" : currentGroup;
             known.set(card.id, card);
             updateAppData(prev => ({...prev, cards:[...prev.cards, card]}));
+            log.push({file:file.name,name:getCardDisplayName(card),id:card.id,status:"已新增"});
             added++;
           } else {
             const at=Date.now();
@@ -5639,13 +5879,17 @@ ${wb.content || ""}`;
             const next=apply(old);
             known.set(old.id,next);
             updateAppData(prev=>({...prev,cards:prev.cards.map(c=>c.id===old.id?(c===old?next:apply(c)):c)}));
+            log.push({file:file.name,name:getCardDisplayName(next),id:old.id,status:"已更新",detail:diffLabel(compareCards(old,next))});
             updated++;
           }
         } catch (err) {
+          log.push({file:file.name,status:"导入失败",detail:err.message});
           failed++;
           showToast(file.name + " 导入失败：" + err.message, "error");
         }
       }
+      setReport(log);
+      await set("vault-last-import",log).catch(()=>showToast("清单仅在本次打开期间可用","info"));
       showToast(["新增 " + added + " 张", updated && "更新 " + updated + " 张", skipped && "跳过 " + skipped + " 张", failed && "失败 " + failed + " 个"].filter(Boolean).join(" · "), failed ? "info" : "success");
     } finally {
       importBusy.current = false;
@@ -6181,6 +6425,11 @@ ${item.details}`], { type: "text/plain;charset=utf-8" });
     ] });
   };
   return /* @__PURE__ */ jsxs("div", { className: "min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 flex flex-col font-sans antialiased selection:bg-zinc-800 selection:text-white", children: [
+    skins?.active && jsx("style",{children:skins.items.find(s=>s.id===skins.active)?.css||""}),
+    showSkins && skins && jsx(SkinManager,{data:skins,save:saveSkins,close:()=>setShowSkins(false)}),
+    fivePool && jsx(FivePanel,{pool:fivePool,close:()=>setFivePool(null),open:id=>{setFivePool(null);setShowThemes(false);setDetailCardId(id);setDetailTab("overview");}}),
+    showReport && hVault("div",{className:"vh-overlay"},hVault("section",{className:"vh-panel vault-history"},hVault(OverlayHead,{title:"本次导入清单",close:()=>setShowReport(false)}),...report.map((r,i)=>hVault("article",{key:i},hVault("strong",null,(r.name||r.file)+" · "+r.status),hVault("small",null,r.file),r.detail&&hVault("p",null,r.detail),appData.cards.some(c=>c.id===r.id)&&hVault("button",{className:"vh-link",onClick:()=>{setShowReport(false);setDetailCardId(r.id);setDetailTab("history");}},"查看版本记录"))))),
+    showThemes && jsx(ThemeFinder,{draw:setFivePool,cards:appData.cards,close:()=>setShowThemes(false),open:id=>{setShowThemes(false);setDetailCardId(id);setDetailTab("overview");},hideTag:(id,tag,restore)=>updateAppData(prev=>({...prev,cards:prev.cards.map(c=>c.id!==id?c:{...c,hiddenThemeTags:[...(c.hiddenThemeTags||[]).filter(t=>t!==tag),...(restore?[]:[tag])]})}))}),
     showScan && jsx(ScanPanel,{cards:appData.cards,close:()=>setShowScan(false),mark:(a,b,distinct)=>updateAppData(prev=>({...prev,cards:markDistinctCards(prev.cards,a,b,distinct)})),merge:(keep,other)=>updateAppData(prev=>({...prev,cards:combineDuplicates(prev.cards,keep,other)}))}),
     lastDuplicate && !detailCardId && jsx("div", {className:"vault-duplicate", role:"status", children:[
       jsx("button",{onClick:()=>{setDetailCardId(lastDuplicate.id);setLastDuplicate(null);},children:"已收藏「"+lastDuplicate.name+"」 · 查看旧卡"}),
@@ -6248,12 +6497,13 @@ ${item.details}`], { type: "text/plain;charset=utf-8" });
                   { id: "fonts", name: "\u5B57\u4F53" },
                   { id: "user-persona", name: "User \u4EBA\u8BBE" },
                   { id: "image-gen", name: "\u751F\u56FE" },
-                  { id: "api-storage", name: "API \u5B58\u50A8" }
+                  { id: "api-storage", name: "API \u5B58\u50A8" },
+                  {id:"toolbox-css",name:"工具箱美化"}
                 ].map((item) => /* @__PURE__ */ jsx(
                   "button",
                   {
                     onClick: () => {
-                      setCurrentPage(item.id);
+                      if(item.id==="toolbox-css")setShowSkins(true);else setCurrentPage(item.id);
                       setSidebarOpen(false);
                     },
                     className: `w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${currentPage === item.id ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-sm" : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/80 hover:text-zinc-900 dark:hover:text-zinc-100"}`,
@@ -6329,7 +6579,7 @@ ${item.details}`], { type: "text/plain;charset=utf-8" });
         }
       ),
       /* @__PURE__ */ jsxs("div", { className: "flex-1 flex flex-col min-w-0 overflow-hidden", children: [
-        /* @__PURE__ */ jsxs("header", { className: "h-14 bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 px-4 flex items-center justify-between flex-shrink-0 z-10", children: [
+        /* @__PURE__ */ jsxs("header", { "data-vault-header":currentPage, className: "h-14 bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 px-4 flex items-center justify-between flex-shrink-0 z-10", children: [
           /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-3", children: [
             /* @__PURE__ */ jsx(
               "button",
@@ -6361,7 +6611,7 @@ ${item.details}`], { type: "text/plain;charset=utf-8" });
                   disabled: currentPage === "st-cards" && !!streamCardBackupProgress,
                   className: "h-7 px-2.5 rounded-md border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-[12px] font-medium text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50",
                   title: currentPage === "st-cards" ? "只把 ST 角色卡和分组写入一个备份文件" : "\u5BFC\u51FA\u5F53\u524D\u677F\u5757\u5168\u90E8\u6570\u636E",
-                  children: currentPage === "st-cards" ? streamCardBackupProgress?.stage === "writing" ? "生成中…" : "备份角色卡" : "\u5BFC\u51FA"
+                  children: currentPage === "st-cards" ? streamCardBackupProgress?.stage === "writing" ? "生成中…" : "备份" : "\u5BFC\u51FA"
                 }
               )
             ] })
@@ -6508,9 +6758,10 @@ ${item.details}`], { type: "text/plain;charset=utf-8" });
                 disabled: isGachaSpinning,
                 className: "px-2.5 py-1.5 text-xs font-semibold rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors whitespace-nowrap",
                 title: "\u968F\u673A\u62BD\u53D6\u4E00\u5F20\u89D2\u8272\u5361",
-                children: isGachaSpinning ? "\u62BD\u53D6\u4E2D..." : "\u62BD\u5361"
+                children: isGachaSpinning ? "\u62BD\u53D6\u4E2D..." : "抽一张"
               }
             ),
+            currentPage==="st-cards" && jsx("button",{className:"vh-link v10-draw",disabled:!appData.cards.length,onClick:()=>setFivePool(appData.cards),children:"抽五张"}),
             currentPage === "user-persona" && /* @__PURE__ */ jsx("button", { onClick: addUserPersona, className: "p-2 rounded-lg border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-300 transition-colors", title: "\u65B0\u589E User \u4EBA\u8BBE", children: /* @__PURE__ */ jsx(Plus, { className: "w-4 h-4" }) }),
             currentPage === "image-gen" && /* @__PURE__ */ jsx("button", { onClick: () => setShowImageGenChoiceModal(true), className: "p-2 rounded-lg border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-300 transition-colors", title: "\u65B0\u589E\u753B\u5E08\u4E32\u6216\u63D0\u793A\u8BCD", children: /* @__PURE__ */ jsx(Plus, { className: "w-4 h-4" }) }),
             currentPage === "chat-memes" && /* @__PURE__ */ jsx(
@@ -6550,7 +6801,7 @@ ${item.details}`], { type: "text/plain;charset=utf-8" });
               ]
             }
           ),
-          jsx("button",{className:"vh-link",onClick:()=>setShowScan(true),children:"整理重复卡"}),
+          jsxs("div",{className:"vh-scan-tabs",children:[jsx("button",{className:"vh-link",onClick:()=>setShowScan(true),children:"整理重复卡"}),jsx("button",{className:"vh-link",onClick:()=>setShowThemes(true),children:"关键词搜索"}),report.length>0 && jsx("button",{className:"vh-link",onClick:()=>setShowReport(true),children:"查看本次清单"})]}),
           /* @__PURE__ */ jsxs("div", { className: "space-y-3", children: [
             /* @__PURE__ */ jsxs("div", { className: "flex flex-col sm:flex-row gap-2.5 items-stretch sm:items-center justify-between", children: [
               /* @__PURE__ */ jsxs("div", { className: "relative flex-1", children: [
