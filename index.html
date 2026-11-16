@@ -215,8 +215,10 @@ html, body, #root {
 </style><style>
 .vault-history{display:grid;gap:10px;font-size:14px;overflow-wrap:anywhere}.vault-history article{border:1px solid #8885;border-radius:12px;padding:12px;min-width:0}.vault-history small,.vault-history strong{display:block}.vault-history pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:40vh;overflow:auto;padding:8px;background:#8881;font-size:13px}.vault-history details{margin:.6em 0}.vault-history summary{cursor:pointer}.vh-link,.vh-row{padding:8px;text-align:left;border:1px solid #8885;border-radius:8px}.vh-row{width:100%;border:none}.vh-link:disabled{opacity:.4}.vh-cover{width:100%;max-height:150px;object-fit:contain}.vh-overlay{position:fixed;inset:0;z-index:220;display:grid;place-items:center;background:#0007;padding:12px}.vh-panel{background:Canvas;color:CanvasText;color-scheme:light dark;max-height:88dvh;overflow:auto;width:min(100%,520px);padding:18px;border-radius:14px}.vh-pair{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}.vault-history h2{font-size:1.2rem;font-weight:bold}
 </style><style>.vh-scan-tabs{display:flex;gap:4px;flex-wrap:wrap}.vh-scan-tabs [aria-pressed="true"]{background:CanvasText;color:Canvas;font-weight:bold}</style><style>.vt-header{display:flex;align-items:center;justify-content:space-between}.vt-hide{font-size:12px;text-decoration:underline;padding:6px 0}.vault-history input[type=search]{width:100%;background:Canvas;color:CanvasText}</style><style>
-.v10-close{width:40px;height:40px;color:#898994;font-size:26px;line-height:1;border:0;background:none}.v10-foot{position:sticky;bottom:0;z-index:2;display:flex;gap:5px;padding:7px 0;background:Canvas;color:CanvasText}.v10-foot button{flex:1;text-align:center;font-size:13px}.v10-diff ins{background:#b8edd1;color:#173923}.v10-diff del{background:#ffd1d4;color:#662a30}.v10-diff article{padding:5px}.v10-front{z-index:240}.v10-pick{display:flex;align-items:center;gap:10px;text-align:left;border-bottom:1px solid #8884;padding:6px}.v10-pick img{width:44px;height:56px;object-fit:cover;border-radius:5px}.v10-pick small{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.v10-draw{white-space:nowrap;font-size:12px}.vh-overlay,.vault-review{overscroll-behavior:contain}
-@media(max-width:500px){header[data-vault-header="st-cards"]{height:auto;min-height:3.5rem;flex-wrap:wrap;gap:3px;padding:5px 8px}header[data-vault-header="st-cards"]>div{gap:3px}}
+.v10-close{width:40px;height:40px;color:#898994;font-size:26px;line-height:1;border:0;background:none}.v10-foot{position:sticky;bottom:0;z-index:2;display:flex;gap:5px;padding:7px 0;background:Canvas;color:CanvasText}.v10-foot button{flex:1;text-align:center;font-size:13px}.v10-diff ins{background:#b8edd1;color:#173923}.v10-diff del{background:#ffd1d4;color:#662a30}.v10-diff article{padding:5px}.v10-front{z-index:240}.v10-pick{display:flex;align-items:center;gap:10px;text-align:left;border-bottom:1px solid #8884;padding:6px}.v10-pick img{width:44px;height:56px;object-fit:cover;border-radius:5px}.v10-pick small{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.vh-overlay,.vault-review{overscroll-behavior:contain}
+@media(max-width:500px){header[data-vault-header="st-cards"]{height:auto!important;min-height:calc(3.5rem + var(--sat));flex-wrap:wrap;gap:3px;padding:calc(var(--sat) + 5px) 8px 5px}header[data-vault-header="st-cards"]>div{gap:3px}}
+</style><style>
+.v11-group{border:1px solid #8885;border-radius:8px;overflow:hidden}.v11-category,.v11-row{width:100%;text-align:left;padding:9px}.v11-category{display:flex;align-items:center;justify-content:space-between;gap:5px}.v11-category small{font-size:.74rem}.v11-pair{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}.v11-row{position:relative;border-top:1px solid #8883;align-items:center}.v11-row>span{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.v11-row>span:nth-child(2){padding-right:3.5em}.v11-row>small{position:absolute;right:6px;font-size:10px;padding:2px 4px;border-radius:4px;background:#8882}.v11-row>[data-status="修改"]{background:#ad84172c}.v11-row>[data-status="减少"]{background:#ba484228}.v11-row>[data-status="新增"]{background:#4e92612b}.v11-labels,.v11-inner{padding:6px 9px;background:#8881}.v11-labels,.v11-inner small{font-size:.75rem}.v11-inner p{white-space:pre-wrap;overflow-wrap:anywhere;font-size:.85rem;line-height:1.6}.v11-inner label{display:flex;gap:5px;align-items:center;margin-bottom:6px}.v11-inner summary{font-size:.78rem}.v10-diff{gap:5px}
 </style></head>
   <body>
     <div id="root"></div>
@@ -1296,16 +1298,77 @@ function diffLabel(d){
 function OverlayHead({title,close}){
   return hVault("div",{className:"vt-header"},hVault("h2",null,title),hVault("button",{className:"v10-close","aria-label":"关闭",onClick:close},"×"));
 }
-function ChangeRow({r}){
-  const [show,setShow]=useState(false);
-  const pos=r.a&&r.b&&r.a.index!==r.b.index&&["世界书","备用开场白"].includes(r.group)?" · 第 "+(r.a.index+1)+" → "+(r.b.index+1)+" 条":"";
-  return hVault("article",null,hVault("button",{className:"vh-row",onClick:()=>setShow(!show)},r.status+" · "+r.name+pos+(r.plus||r.minus?"（+"+r.plus+" / −"+r.minus+" 字）":"")),
-    show&&hVault("div",null,r.edits.map((e,i)=>hVault(e.added?"ins":e.removed?"del":"span",{key:i},!e.added&&!e.removed&&e.value.length>96?e.value.slice(0,36)+" … "+e.value.slice(-36):e.value)),
-      r.a&&r.b&&r.a.meta!==r.b.meta&&hVault("pre",null,Diff.diffChars(r.a.meta||"",r.b.meta||"",{maxEditLength:400,timeout:12})?.map((e,i)=>hVault(e.added?"ins":e.removed?"del":"span",{key:i},!e.added&&!e.removed&&e.value.length>80?e.value.slice(0,30)+" … "+e.value.slice(-30):e.value))||"设置有修改，展开查看"),
-      ["a","b"].map((side,i)=>r[side]&&hVault("details",{key:side},hVault("summary",null,(i?"对照":"基准")+"全文及设置"),hVault("pre",null,r[side].body+"\n"+(r[side].meta||""))))));
+function compareGroup(r){
+  if(r.group==="世界书"||r.name==="世界书设置") return "世界书";
+  if(r.group==="备用开场白"||r.name==="第一条开场白") return "开场白";
+  return r.group==="属性" && r.name!=="封面" ? "其他资料" : r.name;
 }
-function FieldComparison({before,after,direction="当前版相对上一版",part="all",comparison}){
+function rowStatus(r){
+  if(r.status.startsWith("待确认"))return "待确认";
+  return ({删除:"减少","仅调整顺序":"调序","图片数据变化":"修改"})[r.status]||r.status;
+}
+function sideTitle(r,side){
+  const u=r[side];
+  if(!u)return r.name==="封面"?"封面":"—";
+  return u.name || "备用开场白 "+(u.index+1)+" · "+u.body.trim().slice(0,16);
+}
+function previewParts(edits,side,mark){
+  const visible=edits.filter(e=>side==="a"?!e.added:!e.removed);
+  const changed=edits.findIndex(e=>e.added||e.removed);
+  let start=0;
+  if(changed>=0){
+    const prior=edits.slice(0,changed).filter(e=>side==="a"?!e.added:!e.removed);
+    start=Math.max(0,prior.reduce((n,e)=>n+e.value.length,0)-30);
+  }
+  let offset=0;const parts=start?["…"]:[];
+  for(const e of visible){
+    const text=e.value.slice(Math.max(0,start-offset),Math.max(0,start+100-offset));
+    offset+=e.value.length;
+    if(text)parts.push(mark&&(e.added||e.removed)?hVault(e.added?"ins":"del",{key:parts.length},text):text);
+  }
+  if(offset>start+100)parts.push("…");
+  return parts;
+}
+function ChangeRow({r,labels}){
+  const [open,setOpen]=useState(false),[mark,setMark]=useState(false);
+  const status=rowStatus(r),paired=!!(r.a&&r.b);
+  const hasMeta=paired && r.a.meta!==r.b.meta;
+  const metaEdits=React2.useMemo(()=>open&&hasMeta?textEdits(r.a.meta||"",r.b.meta||""):[],[open,hasMeta,r]);
+  function detail(side,i){
+    const u=r[side];
+    if(!u)return hVault("div",{key:side},r.name==="封面"?"见上方封面对照":"—");
+    const single=!paired;
+    const preview=single ? [u.body.slice(0,100)+(u.body.length>100?"…":"")] : previewParts(r.edits,side,mark);
+    const hasSettings=u.meta && u.meta!=="{}";
+    return hVault("div",{key:side},hVault("small",null,labels[i]),hVault("p",null,preview),
+      hasMeta&&hVault("p",null,previewParts(metaEdits,side,mark)),
+      single&&!u.body&&hasSettings&&hVault("p",null,u.meta.slice(0,100)),
+      hVault("details",null,hVault("summary",null,"查看全文"),hVault("pre",null,[u.body,hasSettings?u.meta:""].filter(Boolean).join("\n"))));
+  }
+  return hVault("div",{className:"v11-record"},hVault("button",{className:"v11-pair v11-row","aria-expanded":open,onClick:()=>setOpen(!open)},
+    hVault("span",null,sideTitle(r,"a")),hVault("span",null,sideTitle(r,"b")),hVault("small",{"data-status":status},status)),
+    open&&hVault("div",{className:"v11-inner"},
+      paired&&status==="修改"&&hVault("label",null,hVault("input",{type:"checkbox",checked:mark,onChange:e=>setMark(e.target.checked)})," 标注变动字符"),
+      status==="调序"&&hVault("small",null,"第 "+(r.a.index+1)+" 条 → 第 "+(r.b.index+1)+" 条"),
+      hVault("div",{className:"v11-pair"},["a","b"].map(detail))));
+}
+function DifferenceGroup({name,rows,labels}){
+  const [open,setOpen]=useState(false);
+  const counts=new Map();
+  for(const row of rows){const s=rowStatus(row);counts.set(s,(counts.get(s)||0)+1);}
+  return hVault("div",{className:"v11-group"},hVault("button",{className:"v11-category","aria-expanded":open,onClick:()=>setOpen(!open)},
+    hVault("b",null,(open?"▾ ":"▸ ")+name),hVault("small",null,[...counts].map(([k,n])=>k+" "+n).join(" · "))),
+    open&&hVault("div",null,hVault("div",{className:"v11-pair v11-labels"},...labels.map(k=>hVault("span",{key:k},k))),
+      rows.map((r,i)=>hVault(ChangeRow,{key:i,r,labels}))));
+}
+function FieldComparison({before,after,direction="当前版相对上一版",part="all",comparison,labels=["上一版","当前版"]}){
   const d=React2.useMemo(()=>comparison||compareCards(before,after),[comparison,before,after]);
+  const groups=new Map();
+  for(const row of d.rows){
+    const name=compareGroup(row);
+    if(!groups.has(name))groups.set(name,[]);
+    groups.get(name).push(row);
+  }
   const net=d.next-d.total;
   const pct=d.total?(net>0?"+":"")+(100*net/d.total).toFixed(1)+"%":"无基准";
   return hVault("section",{className:"vault-history v10-diff"},part!=="rows" && hVault("strong",null,direction),
@@ -1315,7 +1378,8 @@ function FieldComparison({before,after,direction="当前版相对上一版",part
       const losses=d.rows.filter(r=>r.group===group && r.status==="删除");
       return losses.length ? hVault("strong",{key:group},"整条删除 · "+group+" "+losses.length+" 条") : null;
     }),
-    ...(part==="summary"?[]:d.rows).slice().sort((a,b)=>Number(b.status==="删除")-Number(a.status==="删除")).map((r,i)=>hVault(ChangeRow,{key:r.name+i,r})));
+    ...(part==="summary"?[]:[...groups]).map(([name,rows])=>hVault(DifferenceGroup,{key:name,name,rows,labels})));
+
 }
 function revisionName(c) {
   const d=c.rawData?.data || c.rawData || {};
@@ -1347,8 +1411,7 @@ function ArchivedCard({card,copy}) {
   return hVault("div",null,hVault("button",{className:"vh-link",onClick:()=>setExpanded(!expanded)},"查看来源卡记录"),expanded && hVault(VersionPanel,{card,copy}));
 }
 const themeWords={
-  "仙侠":["仙侠","修仙","修真","筑基","剑修","渡劫","灵根"],
-  "宗门":["宗门","剑宗","外门弟子","内门弟子"],
+  "仙侠":["仙侠","修仙","修真","筑基","剑修","渡劫","灵根","宗门","剑宗","外门弟子","内门弟子"],
   "古风":["古风","古代","大理寺","侯府","丞相","仵作","王府","朝堂"],
   "探案":["探案","查案","办案","断案","悬案","仵作","验尸","案发现场","侦探"],
   "校园":["校园","同桌","班主任","高三","高中生","大学生","学生会"],
@@ -1407,7 +1470,7 @@ function themeMatches(card,terms){
   const {sections,hits}=themeIndex(card);
   const evidence=[];
   for(const t of terms){
-    const standard=Object.keys(themeWords).find(k=>k===t || themeWords[k].includes(t));
+    const standard=["宗门","剑宗","外门弟子","内门弟子"].includes(t) ? null : Object.keys(themeWords).find(k=>k===t || themeWords[k].includes(t));
     if(standard && card.hiddenThemeTags?.includes(standard)) return null;
     const hit=standard ? hits.get(standard) : themeEvidence(sections,[t]);
     if(!hit) return null;
@@ -1460,13 +1523,14 @@ function ScanPanel({cards,close,merge,mark}) {
         hVault("small",null,"标签："+((c.tags||[]).join("、")||"无")),
         hVault("small",null,"截图 "+((c.screenshots?.authorsNote?.length||0)+(c.screenshots?.favoriteScenes?.length||0))+" · 备用封面 "+(c.extraCovers?.length||0)),
         hVault("small",null,revisionName(c))))),
-      hVault(FieldComparison,{key:pair.a.id+pair.b.id,comparison,part:"rows",direction:"右卡相对左卡"}),
+      hVault(FieldComparison,{key:pair.a.id+pair.b.id,comparison,part:"rows",labels:["左卡","右卡"],direction:"右卡相对左卡"}),
       (tab==="similar" || tab==="ignored") && button(pair.ignored?"撤销区分":"不同作品，两张都保留",()=>mark(pair.a.id,pair.b.id,!pair.ignored)),
       button("上一对",()=>setIndex(pos-1),pos===0),button("下一对",()=>setIndex(pos+1),pos===pairs.length-1),
       !pair.ignored && hVault("div",{className:"v10-foot"},...[pair.a,pair.b].map((c,i)=>button("保留"+(i?"右":"左")+"卡 · "+(c.createdAt?new Date(c.createdAt).toLocaleDateString("zh-CN",{month:"2-digit",day:"2-digit"}):"未记录"),()=>{
         if(confirm("保留「"+getCardDisplayName(c)+"」（"+joinedDate(c.createdAt)+"），并将另一张归入版本记录？"))merge(c.id,i?pair.a.id:pair.b.id);
       }))))));
 }
+const drawButtonStyle="px-2.5 py-1.5 text-xs font-semibold rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors whitespace-nowrap";
 function pickFive(pool){
   const deck=pool.slice();
   for(let i=0;i<Math.min(5,deck.length);i++){
@@ -1505,7 +1569,7 @@ function ImportReview({card,matches,choose}){
   return hVault("div",{className:"vault-history"},hVault("h2",null,"导入角色卡"),hVault("small",null,card.fileName),
     matches.length>1&&hVault("select",{value:index,"aria-label":"选择库内卡",onChange:e=>setIndex(Number(e.target.value))},...matches.map(({old:c},i)=>hVault("option",{key:c.id,value:i},[getCardDisplayName(c),c.group,c.fileName].join(" · ")))),
     hVault("div",{className:"vh-pair"},...[old,card].map((c,i)=>hVault("div",{key:i},c.coverImage&&hVault("img",{src:c.coverImage,className:"vh-cover",alt:""}),hVault("strong",null,(i?"本次导入":"库内卡")+" · "+getCardDisplayName(c)),hVault("small",null,revisionName(c))))),
-    hVault(FieldComparison,{before:old,after:effective,direction:"本次导入相对库内卡",key:old.id}),
+    hVault(FieldComparison,{before:old,after:effective,direction:"本次导入相对库内卡",labels:["库内卡","本次导入"],key:old.id}),
     hVault("div",{className:"v10-foot"},...[["skip","跳过"],["add","另存一张"],[changes.length?"update":"cover",changes.length?"更新旧卡":"只换封面"]].map(([action,label])=>hVault("button",{className:"vh-link",key:action,onClick:()=>choose({action,old})},label))));
 }
 function reviewCardImport(card,matches){
@@ -6756,12 +6820,12 @@ ${item.details}`], { type: "text/plain;charset=utf-8" });
               {
                 onClick: handleDrawRandomCard,
                 disabled: isGachaSpinning,
-                className: "px-2.5 py-1.5 text-xs font-semibold rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors whitespace-nowrap",
+                className: drawButtonStyle,
                 title: "\u968F\u673A\u62BD\u53D6\u4E00\u5F20\u89D2\u8272\u5361",
                 children: isGachaSpinning ? "\u62BD\u53D6\u4E2D..." : "抽一张"
               }
             ),
-            currentPage==="st-cards" && jsx("button",{className:"vh-link v10-draw",disabled:!appData.cards.length,onClick:()=>setFivePool(appData.cards),children:"抽五张"}),
+            currentPage==="st-cards" && jsx("button",{className:drawButtonStyle+" v10-draw",disabled:!appData.cards.length,onClick:()=>setFivePool(appData.cards),children:"抽五张"}),
             currentPage === "user-persona" && /* @__PURE__ */ jsx("button", { onClick: addUserPersona, className: "p-2 rounded-lg border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-300 transition-colors", title: "\u65B0\u589E User \u4EBA\u8BBE", children: /* @__PURE__ */ jsx(Plus, { className: "w-4 h-4" }) }),
             currentPage === "image-gen" && /* @__PURE__ */ jsx("button", { onClick: () => setShowImageGenChoiceModal(true), className: "p-2 rounded-lg border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-300 transition-colors", title: "\u65B0\u589E\u753B\u5E08\u4E32\u6216\u63D0\u793A\u8BCD", children: /* @__PURE__ */ jsx(Plus, { className: "w-4 h-4" }) }),
             currentPage === "chat-memes" && /* @__PURE__ */ jsx(
