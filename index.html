@@ -2109,7 +2109,9 @@ function sortItemList(items, sortOrder, getName, getCreatedAt) {
   }
   return list;
 }
-function GroupDropdown({ groups, selected, allValue = "\u5168\u90E8\u5206\u7EC4", allLabel = "\u5168\u90E8\u5206\u7EC4", allCount, counts = {}, onSelect, onReorder, onManage }) {
+function GroupDropdown({ groups, selected, allValue = "\u5168\u90E8\u5206\u7EC4", allLabel = "\u5168\u90E8\u5206\u7EC4", allCount, counts = {}, onSelect, onReorder, onManage, showSelected = false }) {
+  const v121Label = showSelected && selected !== allValue ? selected : allLabel;
+  const v121Count = showSelected && selected !== allValue ? counts[selected] ?? 0 : allCount;
   const [open, setOpen] = useState(false);
   const lastTapRef = useRef({ key: "", time: 0 });
   const handleManageTap = (group) => {
@@ -2131,11 +2133,11 @@ function GroupDropdown({ groups, selected, allValue = "\u5168\u90E8\u5206\u7EC4"
     setOpen((v) => !v);
   };
   return /* @__PURE__ */ jsxs("div", { className: "relative flex-shrink-0", children: [
-    /* @__PURE__ */ jsxs("button", { ref: triggerRef, type: "button", onClick: openMenu, className: `flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl whitespace-nowrap transition-all border ${selected === allValue ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 border-transparent shadow-sm" : "bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800"}`, "aria-expanded": open, children: [
-      /* @__PURE__ */ jsx("span", { children: allLabel }),
+    /* @__PURE__ */ jsxs("button", { ref: triggerRef, type: "button", onClick: openMenu, className: `flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl whitespace-nowrap transition-all border ${showSelected || selected === allValue ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 border-transparent shadow-sm" : "bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800"}`, "aria-expanded": open, children: [
+      /* @__PURE__ */ jsx("span", { children: v121Label }),
       /* @__PURE__ */ jsxs("span", { className: "opacity-70", children: [
         "(",
-        allCount,
+        v121Count,
         ")"
       ] }),
       /* @__PURE__ */ jsx(ChevronDown, { className: `w-3.5 h-3.5 transition-transform ${open ? "rotate-180" : ""}` })
@@ -2143,7 +2145,7 @@ function GroupDropdown({ groups, selected, allValue = "\u5168\u90E8\u5206\u7EC4"
     open && /* @__PURE__ */ jsxs(Fragment, { children: [
       /* @__PURE__ */ jsx("button", { type: "button", "aria-label": "\u5173\u95ED\u5206\u7EC4\u83DC\u5355", className: "fixed inset-0 z-[70] cursor-default", onClick: () => setOpen(false) }),
       /* @__PURE__ */ jsxs("div", { onClick: (e) => e.stopPropagation(), style: { left: menuPos.left, top: menuPos.top }, className: "fixed z-[100] w-72 max-w-[calc(100vw-2rem)] rounded-2xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 shadow-2xl p-2", children: [
-        /* @__PURE__ */ jsx("div", { className: "px-2 py-1.5 text-[11px] font-bold text-zinc-400 dark:text-zinc-500", children: "\u9009\u62E9\u5206\u7EC4 / \u8C03\u6574\u987A\u5E8F" }),
+        /* @__PURE__ */ jsx("div", { className: "px-2 py-1.5 text-[11px] font-bold text-zinc-400 dark:text-zinc-500", children: onManage ? "选择分组 · 调整顺序 · 点笔可改名或删除" : "\u9009\u62E9\u5206\u7EC4 / \u8C03\u6574\u987A\u5E8F" }),
         /* @__PURE__ */ jsxs("button", { type: "button", onClick: () => {
           onSelect(allValue);
           setOpen(false);
@@ -2166,7 +2168,8 @@ function GroupDropdown({ groups, selected, allValue = "\u5168\u90E8\u5206\u7EC4"
           ] }),
           /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-0.5 pr-1", children: [
             /* @__PURE__ */ jsx("button", { type: "button", disabled: index <= 1 || group === "\u9ED8\u8BA4", onClick: () => onReorder(group, orderedGroups[index - 1]), className: "p-1 rounded-lg text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-200 dark:hover:bg-zinc-700 disabled:opacity-25", title: "\u4E0A\u79FB", children: /* @__PURE__ */ jsx(ChevronUp, { className: "w-3.5 h-3.5" }) }),
-            /* @__PURE__ */ jsx("button", { type: "button", disabled: index === orderedGroups.length - 1 || group === "\u9ED8\u8BA4", onClick: () => onReorder(group, orderedGroups[index + 1]), className: "p-1 rounded-lg text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-200 dark:hover:bg-zinc-700 disabled:opacity-25", title: "\u4E0B\u79FB", children: /* @__PURE__ */ jsx(ChevronDown, { className: "w-3.5 h-3.5" }) })
+            /* @__PURE__ */ jsx("button", { type: "button", disabled: index === orderedGroups.length - 1 || group === "\u9ED8\u8BA4", onClick: () => onReorder(group, orderedGroups[index + 1]), className: "p-1 rounded-lg text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-200 dark:hover:bg-zinc-700 disabled:opacity-25", title: "\u4E0B\u79FB", children: /* @__PURE__ */ jsx(ChevronDown, { className: "w-3.5 h-3.5" }) }),
+            onManage && jsx("button", { type: "button", "aria-label": "管理分组 " + group, title: "改名或删除", onClick: () => { setOpen(false); onManage(group); }, className: "p-1 rounded-lg text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-200 dark:hover:bg-zinc-700", children: jsx(Edit3, { className: "w-3.5 h-3.5" }) })
           ] })
         ] }, group)) })
       ] })
@@ -7490,43 +7493,11 @@ ${item.details}`], { type: "text/plain;charset=utf-8" });
                     allCount: appData.cards.length,
                     counts: Object.fromEntries((appData.groups || ["\u9ED8\u8BA4"]).map((g) => [g, appData.cards.filter((c) => (c.group || "\u9ED8\u8BA4") === g).length])),
                     onSelect: setCurrentGroup,
+                    showSelected: true,
+                    onManage: (g) => { setManagingGroup(g); setRenameGroupInput(g); },
                     onReorder: (from, to) => reorderGroupField("groups", from, to)
                   }
                 ),
-                appData.groups.map((groupName) => {
-                  const count = appData.cards.filter((c) => (c.group || "\u9ED8\u8BA4") === groupName).length;
-                  const isSelected = currentGroup === groupName;
-                  return /* @__PURE__ */ jsx(
-                    "div",
-                    {
-                      className: "relative group flex items-center",
-                      onDoubleClick: () => {
-                        setManagingGroup(groupName);
-                        setRenameGroupInput(groupName);
-                      },
-                      onPointerUp: () => handleGroupDoubleTap(`cards:${groupName}`, () => {
-                        setManagingGroup(groupName);
-                        setRenameGroupInput(groupName);
-                      }),
-                      children: /* @__PURE__ */ jsxs(
-                        "button",
-                        {
-                          onClick: () => setCurrentGroup(groupName),
-                          className: `px-3 py-1.5 text-xs font-medium rounded-lg whitespace-nowrap transition-all flex items-center gap-1.5 ${isSelected ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-sm" : "bg-zinc-100 dark:bg-zinc-800/60 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-800"}`,
-                          children: [
-                            /* @__PURE__ */ jsx("span", { children: groupName }),
-                            /* @__PURE__ */ jsxs("span", { className: "text-[10px] opacity-70", children: [
-                              "(",
-                              count,
-                              ")"
-                            ] })
-                          ]
-                        }
-                      )
-                    },
-                    groupName
-                  );
-                })
               ] }),
               /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2 flex-shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-zinc-100 dark:border-zinc-800", children: [
                 /* @__PURE__ */ jsxs(
