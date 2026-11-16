@@ -20,6 +20,14 @@
           navigator.serviceWorker.register("./service-worker.js", { scope: "./" }).catch(function (error) {
             console.warn("PWA service worker registration failed", error);
           });
+          navigator.serviceWorker.ready.then(function (reg) {
+            setTimeout(function () {
+              try {
+                var urls = performance.getEntriesByType("resource").map(function (e) { return e.name; }).filter(function (u) { return u.indexOf("https://esm.sh/") === 0; });
+                if (urls.length && reg.active) reg.active.postMessage({ type: "cache-libs", urls: urls });
+              } catch (e) {}
+            }, 3000);
+          });
         });
       }
     </script>
@@ -219,7 +227,7 @@ html, body, #root {
 @media(max-width:500px){header[data-vault-header="st-cards"]{height:auto!important;min-height:calc(3.5rem + var(--sat));flex-wrap:wrap;gap:3px;padding:calc(var(--sat) + 5px) 8px 5px}header[data-vault-header="st-cards"]>div{gap:3px}}
 </style><style>
 .v11-group{border:1px solid #8885;border-radius:8px;overflow:hidden}.v11-category,.v11-row{width:100%;text-align:left;padding:9px}.v11-category{display:flex;align-items:center;justify-content:space-between;gap:5px}.v11-category small{font-size:.74rem}.v11-pair{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}.v11-row{position:relative;border-top:1px solid #8883;align-items:center}.v11-row>span{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.v11-row>span:nth-child(2){padding-right:3.5em}.v11-row>small{position:absolute;right:6px;font-size:10px;padding:2px 4px;border-radius:4px;background:#8882}.v11-row>[data-status="修改"]{background:#ad84172c}.v11-row>[data-status="减少"]{background:#ba484228}.v11-row>[data-status="新增"]{background:#4e92612b}.v11-labels,.v11-inner{padding:6px 9px;background:#8881}.v11-labels,.v11-inner small{font-size:.75rem}.v11-inner p{white-space:pre-wrap;overflow-wrap:anywhere;font-size:.85rem;line-height:1.6}.v11-inner label{display:flex;gap:5px;align-items:center;margin-bottom:6px}.v11-inner summary{font-size:.78rem}.v10-diff{gap:5px}
-</style></head>
+</style><style>.vault-skin-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}.vault-skin-row button{overflow-wrap:anywhere;min-height:40px}</style><style id="v113-style">.v113-thumb-wait{width:100%;height:100%;background:linear-gradient(100deg,#8881 30%,#8882 50%,#8881 70%);background-size:300% 100%;animation:v113s 1.4s ease-in-out infinite}@keyframes v113s{from{background-position:100% 0}to{background-position:0 0}}.v113-nudge{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;border:1px solid #d4a23a66;border-radius:12px;background:#fef3c7;color:#713f12;font-size:13px}.dark .v113-nudge{background:#422006;color:#fde68a;border-color:#a1620766}.v113-nudge>div{display:flex;gap:6px}.v113-nudge .vh-link{padding:5px 10px;font-size:12px;background:#fff8;color:inherit}.dark .v113-nudge .vh-link{background:#0003}</style><style id="v114-style">.v114-status{display:flex;align-items:center;gap:6px;flex-wrap:wrap}.v114-status-label{font-size:12px;opacity:.7;margin-right:2px}.v114-chip{font-size:12px;line-height:1.2;padding:4px 11px;border-radius:999px;border:1px solid #8886;color:inherit;background:transparent}.v114-chip[aria-pressed="true"]{color:#fff;border-color:transparent;font-weight:700}.v114-chip.v114-todo[aria-pressed="true"]{background:#d97706}.v114-chip.v114-playing[aria-pressed="true"]{background:#2563eb}.v114-chip.v114-done[aria-pressed="true"]{background:#71717a}.v114-center{justify-content:center}.v114-detailbar{padding:8px 24px;border-bottom:1px solid #8883;flex-shrink:0}.v114-histlink{font-size:12px;opacity:.7;text-decoration:underline;margin-top:-6px}.v114-badge{position:absolute;left:6px;bottom:6px;font-size:9px;font-weight:700;line-height:1;padding:3px 5px;border-radius:4px;color:#fff;pointer-events:none}.v114-badge.v114-todo{background:#d97706e6}.v114-badge.v114-playing{background:#2563ebe6}.v114-badge.v114-done{background:#52525bd9}.v114-pickrow{border-bottom:1px solid #8884;padding:2px 0 8px}.v114-pickrow .v10-pick{border-bottom:0;width:100%}.v114-pickrow .v114-status{padding-left:60px}.v114-nocover{width:44px;height:56px;border-radius:5px;background:#8882;flex-shrink:0}.v114-foot{display:flex;gap:8px;position:sticky;bottom:-18px;margin:0 -18px -18px;padding:10px 18px calc(10px + env(safe-area-inset-bottom,0px));background:Canvas;border-top:1px solid #8883}.v114-foot .vh-link{flex:1;text-align:center}.v114-empty,.v114-tip{font-size:13px;opacity:.75}.v114-scope{margin-top:-4px}</style></head>
   <body>
     <div id="root"></div>
 
@@ -304,7 +312,7 @@ import {
 } from "lucide-react";
 
 // src/utils/storage.ts
-import { get, set, del } from "idb-keyval";
+import { get, set, del, keys as idbKeys } from "idb-keyval";
 var STORAGE_KEY = "tavern_vault_data_v1";
 var cachedAppData = null;
 var saveQueue = Promise.resolve(true);
@@ -1211,6 +1219,126 @@ function combineDuplicates(cards, keepId, otherId) {
 const vaultDate = t => t ? new Date(t).toLocaleString("zh-CN",{hour12:false}) : "日期未记录";
 const fieldLabels={first_mes:"第一条开场白",alternate_greetings:"备用开场白",description:"角色描述",character_book:"世界书",character_version:"作者版本",creator:"作者",extensions:"扩展",tags:"标签",scenario:"场景",personality:"性格",name:"角色名",system_prompt:"系统提示词",creator_notes:"作者备注",mes_example:"对话示例"};
 const hVault = React2.createElement;
+/* ===== v11.3 · 列表缩略图 / 备份记录 / 备份提醒 ===== */
+const V113_THUMB_W = 360;
+const V113_THUMB_PREFIX = "vault-thumb::";
+const V113_SMALL_SRC = 120000;
+const v113ThumbMem = new Map();
+const v113ThumbQueue = [];
+let v113ThumbBusy = false;
+function v113ThumbFp(src) { return String(src.length) + ":" + src.slice(-40); }
+async function v113MakeThumb(src) {
+  const img = new Image();
+  img.decoding = "async";
+  img.src = src;
+  await img.decode();
+  const nw = img.naturalWidth || V113_THUMB_W, nh = img.naturalHeight || V113_THUMB_W;
+  const w = Math.min(V113_THUMB_W, nw), h = Math.max(1, Math.round(nh * w / nw));
+  const canvas = document.createElement("canvas");
+  canvas.width = w; canvas.height = h;
+  const ctx = canvas.getContext("2d");
+  ctx.fillStyle = "#f4f4f5";
+  ctx.fillRect(0, 0, w, h);
+  ctx.drawImage(img, 0, 0, w, h);
+  const out = canvas.toDataURL("image/jpeg", 0.82);
+  canvas.width = canvas.height = 0;
+  img.src = "";
+  return out;
+}
+async function v113PumpThumbs() {
+  if (v113ThumbBusy) return;
+  v113ThumbBusy = true;
+  try {
+    while (v113ThumbQueue.length) {
+      const job = v113ThumbQueue.shift();
+      let rec = v113ThumbMem.get(job.id);
+      if (!(rec && rec.fp === job.fp)) {
+        rec = null;
+        try { rec = await get(V113_THUMB_PREFIX + job.id); } catch {}
+        if (!(rec && rec.fp === job.fp)) {
+          try {
+            rec = { fp: job.fp, src: await v113MakeThumb(job.src) };
+            set(V113_THUMB_PREFIX + job.id, rec).catch(() => {});
+          } catch (err) {
+            console.warn("thumbnail failed, using original", err);
+            rec = { fp: job.fp, src: job.src };
+          }
+        }
+        v113ThumbMem.set(job.id, rec);
+      }
+      job.done(rec.src);
+      await new Promise((r) => setTimeout(r, 0));
+    }
+  } finally {
+    v113ThumbBusy = false;
+  }
+}
+function v113RequestThumb(id, src, done) {
+  const fp = v113ThumbFp(src);
+  const hit = v113ThumbMem.get(id);
+  if (hit && hit.fp === fp) return hit.src;
+  v113ThumbQueue.push({ id, src, fp, done });
+  void v113PumpThumbs();
+  return null;
+}
+async function v113PruneThumbs(ids) {
+  try {
+    const keep = new Set(ids);
+    for (const k of await idbKeys()) {
+      if (typeof k === "string" && k.startsWith(V113_THUMB_PREFIX) && !keep.has(k.slice(V113_THUMB_PREFIX.length))) await del(k);
+    }
+  } catch {}
+}
+function VaultThumb({ id, src, alt, className }) {
+  const small = !src || src.length < V113_SMALL_SRC;
+  const [thumb, setThumb] = React2.useState(() => {
+    if (small) return src;
+    const m = v113ThumbMem.get(id);
+    return m && m.fp === v113ThumbFp(src) ? m.src : null;
+  });
+  React2.useEffect(() => {
+    if (small) { setThumb(src); return; }
+    let live = true;
+    const ready = v113RequestThumb(id, src, (s) => { if (live) setThumb(s); });
+    if (ready) setThumb(ready);
+    return () => { live = false; };
+  }, [id, src]);
+  if (!thumb) return hVault("div", { className: "v113-thumb-wait", role: "img", "aria-label": alt });
+  return hVault("img", { src: thumb, alt, className, loading: "lazy", decoding: "async" });
+}
+const V113_BACKUP_KEY = "vault-last-backup";
+const V113_SNOOZE_KEY = "vault-backup-snooze-until";
+const V113_DAY = 864e5;
+function markVaultBackup(kind) {
+  try { localStorage.setItem(V113_BACKUP_KEY, JSON.stringify({ at: Date.now(), kind })); } catch {}
+  try { window.dispatchEvent(new Event("vault-backup-done")); } catch {}
+}
+function readVaultBackup() {
+  try { const v = JSON.parse(localStorage.getItem(V113_BACKUP_KEY) || "null"); return v && v.at ? v : null; } catch { return null; }
+}
+function BackupNudge({ cardCount, busy, onBackup }) {
+  const [tick, setTick] = React2.useState(0);
+  React2.useEffect(() => {
+    const f = () => setTick((t) => t + 1);
+    window.addEventListener("vault-backup-done", f);
+    return () => window.removeEventListener("vault-backup-done", f);
+  }, []);
+  if (!cardCount) return null;
+  const now = Date.now();
+  let snooze = 0;
+  try { snooze = Number(localStorage.getItem(V113_SNOOZE_KEY) || 0); } catch {}
+  if (now < snooze) return null;
+  const last = readVaultBackup();
+  const days = last ? Math.floor((now - last.at) / V113_DAY) : null;
+  if (last && days < 7) return null;
+  const text = last ? "距离上次备份已经 " + days + " 天了" : "还没有备份过，建议存一份到「文件」里";
+  return hVault("div", { className: "v113-nudge", role: "status" },
+    hVault("span", null, text),
+    hVault("div", null,
+      hVault("button", { className: "vh-link", disabled: busy, onClick: onBackup }, "现在备份"),
+      hVault("button", { className: "vh-link v113-later", onClick: () => { try { localStorage.setItem(V113_SNOOZE_KEY, String(now + 3 * V113_DAY)); } catch {} setTick(tick + 1); } }, "过几天再说")));
+}
+
 function fieldText(value) {
   if (value === undefined) return "（无此字段）";
   return typeof value==="string" ? value || "（空）" : JSON.stringify(value,null,2);
@@ -1539,28 +1667,113 @@ function pickFive(pool){
   }
   return deck.slice(0,5);
 }
-function FivePanel({pool,open,close}){
-  const [picks,setPicks]=useState(()=>pickFive(pool));
-  return hVault("div",{className:"vh-overlay v10-front"},hVault("section",{className:"vh-panel vault-history"},
-    hVault(OverlayHead,{title:"抽五张",close}),...picks.map(c=>hVault("button",{className:"v10-pick",key:c.id,onClick:()=>open(c.id)},
-      c.coverImage&&hVault("img",{src:c.coverImage,alt:""}),hVault("div",null,hVault("strong",null,getCardDisplayName(c)),hVault("small",null,String(getCardGreeting(c)||getCardDescription(c)||"暂无开场白").slice(0,100))))),
-    hVault("button",{className:"vh-link",onClick:()=>setPicks(pickFive(pool))},"换一批")));
+/* ===== v11.4 · 玩卡状态 / 抽卡范围 / 抽卡记录 ===== */
+const V114_STATUS=[["todo","待玩"],["playing","在玩"],["done","玩过"]];
+const V114_STATUS_LABEL={todo:"待玩",playing:"在玩",done:"玩过"};
+const V114_SCOPES=[["all","全部"],["fresh","跳过玩过的"],["todo","只抽待玩"]];
+const V114_HISTORY_KEY="vault-draw-history", V114_SCOPE_KEY="vault-draw-scope", V114_HISTORY_MAX=20;
+function v114History(){try{const v=JSON.parse(localStorage.getItem(V114_HISTORY_KEY)||"[]");return Array.isArray(v)?v.filter(x=>x&&x.id):[];}catch{return [];}}
+function v114RecordDraw(ids){
+  if(!ids.length)return;
+  const at=Date.now(), fresh=new Set(ids);
+  const next=[...ids.map(id=>({id,at})),...v114History().filter(h=>!fresh.has(h.id))].slice(0,V114_HISTORY_MAX);
+  try{localStorage.setItem(V114_HISTORY_KEY,JSON.stringify(next));}catch{}
+}
+function v114GetScope(){try{const v=localStorage.getItem(V114_SCOPE_KEY);return V114_SCOPES.some(x=>x[0]===v)?v:"all";}catch{return "all";}}
+function v114InScope(card,scope){const st=card.playStatus;return scope==="todo"?st==="todo":scope==="fresh"?st!=="done":true;}
+function v114Shuffle(list){const a=list.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+// 先抽最近没抽到过的；不够数时，从最早抽到的那几张里补
+function v114Draw(cards,n,scope){
+  const base=cards.filter(c=>v114InScope(c,scope));
+  const recent=new Set(v114History().map(h=>h.id));
+  const picks=v114Shuffle(base.filter(c=>!recent.has(c.id))).slice(0,n);
+  if(picks.length<n){
+    const order=new Map(v114History().map((h,i)=>[h.id,i]));
+    const oldest=base.filter(c=>recent.has(c.id)).sort((a,b)=>order.get(b.id)-order.get(a.id));
+    picks.push(...v114Shuffle(oldest.slice(0,(n-picks.length)*2)).slice(0,n-picks.length));
+  }
+  return picks;
+}
+function v114When(at){
+  const d=new Date(at), now=new Date(), hm=String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");
+  const day=x=>new Date(x.getFullYear(),x.getMonth(),x.getDate()).getTime();
+  const diff=Math.round((day(now)-day(d))/864e5);
+  return (diff===0?"今天 ":diff===1?"昨天 ":(d.getMonth()+1)+"月"+d.getDate()+"日 ")+hm+" 抽到";
+}
+function PlayStatusBar({status,onChange,label,className}){
+  return hVault("div",{className:"v114-status"+(className?" "+className:""),role:"group","aria-label":"玩卡状态"},
+    label&&hVault("span",{className:"v114-status-label"},label),
+    ...V114_STATUS.map(([k,t])=>hVault("button",{key:k,type:"button",className:"v114-chip v114-"+k,"aria-pressed":status===k,
+      onClick:e=>{e.stopPropagation();onChange(status===k?null:k);}},t)));
+}
+function FivePanel({pool,cards,init,open,close,setStatus}){
+  const byId=React2.useMemo(()=>new Map(cards.map(c=>[c.id,c])),[cards]);
+  const live=React2.useMemo(()=>pool.map(c=>byId.get(c.id)).filter(Boolean),[pool,byId]);
+  const [scope,setScope]=useState(v114GetScope);
+  const drawIds=sc=>{const ids=v114Draw(live,5,sc).map(c=>c.id);v114RecordDraw(ids);return ids;};
+  const [picks,setPicks]=useState(()=>init?.picks||(init?.view==="history"?[]:drawIds(scope)));
+  const [view,setView]=useState(init?.view||"picks");
+  const [hist,setHist]=useState(v114History);
+  const reroll=(sc=scope)=>{setPicks(drawIds(sc));setHist(v114History());setView("picks");};
+  const changeScope=sc=>{try{localStorage.setItem(V114_SCOPE_KEY,sc);}catch{}setScope(sc);reroll(sc);};
+  const row=(c,meta)=>hVault("div",{className:"v114-pickrow",key:c.id},
+    hVault("button",{className:"v10-pick",onClick:()=>open(c.id,{picks,view})},
+      c.coverImage?hVault(VaultThumb,{id:c.id,src:c.coverImage,alt:""}):hVault("span",{className:"v114-nocover"}),
+      hVault("div",null,hVault("strong",null,getCardDisplayName(c)),hVault("small",null,meta||String(getCardGreeting(c)||getCardDescription(c)||"暂无开场白").slice(0,100)))),
+    hVault(PlayStatusBar,{status:c.playStatus,onChange:st=>setStatus(c.id,st)}));
+  const pickCards=picks.map(id=>byId.get(id)).filter(Boolean);
+  const histRows=hist.map(h=>({h,c:byId.get(h.id)})).filter(x=>x.c);
+  return hVault("div",{className:"vh-overlay v10-front"},hVault("section",{className:"vh-panel vault-history v114-five"},
+    hVault(OverlayHead,{title:view==="history"?"抽卡记录":"抽五张",close}),
+    view==="picks"&&hVault("div",{className:"vh-scan-tabs v114-scope",role:"group","aria-label":"抽卡范围"},
+      ...V114_SCOPES.map(([k,t])=>hVault("button",{key:k,className:"vh-link","aria-pressed":scope===k,onClick:()=>changeScope(k)},t))),
+    view==="history"&&hVault("p",{className:"v114-tip"},"最近抽到的 "+V114_HISTORY_MAX+" 张，新的在上面，更早的会自动挤掉。"),
+    view==="picks"
+      ?(pickCards.length?pickCards.map(c=>row(c)):hVault("p",{className:"v114-empty"},scope==="todo"?"还没有标成「待玩」的卡。可以先换个范围抽，抽到喜欢的顺手标上。":"这个范围里没有卡了，换个范围试试。"))
+      :(histRows.length?histRows.map(({h,c})=>row(c,v114When(h.at))):hVault("p",{className:"v114-empty"},"还没有抽卡记录。")),
+    hVault("div",{className:"v114-foot"},
+      view==="picks"
+        ?hVault("button",{className:"vh-link",onClick:()=>reroll()},"换一批")
+        :hVault("button",{className:"vh-link",onClick:()=>picks.length?setView("picks"):reroll()},picks.length?"回到这一批":"抽五张"),
+      view==="picks"
+        ?hVault("button",{className:"vh-link",onClick:()=>{setHist(v114History());setView("history");}},"抽卡记录")
+        :hVault("button",{className:"vh-link",disabled:!hist.length,onClick:()=>{if(confirm("清空抽卡记录？卡片本身和标注都不会受影响。")){try{localStorage.removeItem(V114_HISTORY_KEY);}catch{}setHist([]);}}},"清空记录"))));
 }
 function SkinManager({data,save,close}){
   const [error,setError]=useState("");
-  async function importCSS(e){
+  const [busy,setBusy]=useState(false);
+  const pending=useRef(false);
+  async function change(makeNext){
+    if(pending.current)return;
+    pending.current=true;
+    setBusy(true);
+    setError("");
+    try{await save(await makeNext());}
+    catch(err){setError("未能保存美化："+(err.message||"请重试"));}
+    finally{pending.current=false;setBusy(false);}
+  }
+  function importCSS(e){
     const file=e.target.files?.[0];e.target.value="";
     if(!file)return;
-    try{
+    return change(async()=>{
       const css=await file.text();
-      if(!css.trim()) throw Error("文件为空");
-      await save({...data,items:[...data.items,{id:crypto.randomUUID(),name:file.name,css}]});setError("");
-    }catch(err){setError("导入失败："+err.message);}
+      if(!css.trim())throw Error("文件为空");
+      return {...data,items:[...data.items,{id:crypto.randomUUID(),name:file.name,css}]};
+    });
+  }
+  function remove(skin){
+    const active=data.active===skin.id;
+    if(!confirm("从工具箱删除「"+skin.name+"」？"+(active?"删除后将使用默认外观。":"")))return;
+    return change(()=>({...data,active:active?null:data.active,items:data.items.filter(item=>item.id!==skin.id)}));
   }
   return hVault("div",{className:"vh-overlay"},hVault("section",{className:"vh-panel vault-history"},
-    hVault(OverlayHead,{title:"工具箱美化",close}),hVault("label",null,"导入 CSS 文件",hVault("input",{type:"file",accept:".css,text/css",onChange:importCSS})),
-    hVault("button",{className:"vh-link",onClick:()=>save({...data,active:null})},!data.active?"✓ 默认外观":"使用默认外观"),
-    ...data.items.map(s=>hVault("button",{key:s.id,className:"vh-link",onClick:()=>save({...data,active:s.id})},(s.id===data.active?"✓ ":"")+s.name)),error&&hVault("p",null,error)));
+    hVault(OverlayHead,{title:"工具箱美化",close:()=>{if(!pending.current)close();}}),
+    hVault("label",null,"导入 CSS 文件",hVault("input",{disabled:busy,type:"file",accept:".css,text/css",onChange:importCSS})),
+    hVault("button",{disabled:busy,className:"vh-link",onClick:()=>change(()=>({...data,active:null}))},!data.active?"✓ 默认外观":"使用默认外观"),
+    ...data.items.map(s=>hVault("div",{key:s.id,className:"vault-skin-row"},
+      hVault("button",{disabled:busy,className:"vh-link","aria-pressed":s.id===data.active,onClick:()=>change(()=>({...data,active:s.id}))},(s.id===data.active?"✓ ":"")+s.name),
+      hVault("button",{disabled:busy,className:"vh-link","aria-label":"删除美化 "+s.name,onClick:()=>remove(s)},"删除"))),
+    error&&hVault("p",{role:"alert"},error)));
 }
 function ImportReview({card,matches,choose}){
   const [index,setIndex]=useState(0);
@@ -1747,7 +1960,9 @@ function App() {
   const cardLoadMoreRef = useRef(null);
   const [detailCardId, setDetailCardId] = useState(null);
   const [detailTab, setDetailTab] = useState("overview");
-  const [cardSortOrder, setCardSortOrder] = useState("default");
+  const [cardSortOrder, setCardSortOrder] = useState(() => { try { return localStorage.getItem("vault-card-sort") || "default"; } catch { return "default"; } });
+  useEffect(() => { try { localStorage.setItem("vault-card-sort", cardSortOrder); } catch {} }, [cardSortOrder]);
+  useEffect(() => { try { navigator.storage?.persist?.()?.catch?.(() => {}); } catch {} }, []);
   const [themeSortOrder, setThemeSortOrder] = useState("default");
   const [presetSortOrder, setPresetSortOrder] = useState("default");
   const [pluginSortOrder, setPluginSortOrder] = useState("default");
@@ -1854,9 +2069,14 @@ function App() {
     }
     setIsGachaSpinning(true);
     setTimeout(() => {
-      const randomIndex = Math.floor(Math.random() * appData.cards.length);
-      setGachaCard(appData.cards[randomIndex]);
+      const pick = v114Draw(appData.cards, 1, v114GetScope())[0];
       setIsGachaSpinning(false);
+      if (!pick) {
+        showToast("当前抽卡范围里没有卡，可以在「抽五张」里换个范围", "error");
+        return;
+      }
+      v114RecordDraw([pick.id]);
+      setGachaCard(pick);
     }, 300);
   };
   const downloadJsonFile = (fileName, data) => {
@@ -2179,6 +2399,7 @@ function App() {
         a.remove();
         setTimeout(() => URL.revokeObjectURL(url), 3e4);
       }
+      markVaultBackup(prepared.backupKind || "stream");
       showToast(prepared.backupKind === "cards" ? "角色卡单文件备份已交给系统保存" : "全库单文件备份已交给系统保存", "success");
       await closeStreamBackup();
     } catch (err) {
@@ -2349,6 +2570,7 @@ function App() {
         }
         await write("}");
         await writable.close();
+        markVaultBackup("legacy");
         showToast("\u5168\u90E8\u6570\u636E\u5BFC\u51FA\u6210\u529F\uFF08\u4E0D\u542B\u5B57\u4F53\uFF09\uFF01", "success");
         return;
       }
@@ -2388,7 +2610,8 @@ function App() {
       a.click();
       a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 1e3);
-      showToast("\u5168\u90E8\u6570\u636E\u5BFC\u51FA\u6210\u529F\uFF08\u4E0D\u542B\u5B57\u4F53\uFF09\uFF01", "success");
+      markVaultBackup("legacy");
+        showToast("\u5168\u90E8\u6570\u636E\u5BFC\u51FA\u6210\u529F\uFF08\u4E0D\u542B\u5B57\u4F53\uFF09\uFF01", "success");
     } catch (err) {
       console.error("Export full backup failed", err);
       showToast("\u5BFC\u51FA\u5931\u8D25\uFF1A\u6570\u636E\u91CF\u8FC7\u5927\uFF0C\u8BF7\u4F7F\u7528\u6700\u65B0\u7248 Chrome/Edge \u518D\u8BD5\u3002", "error");
@@ -5830,6 +6053,11 @@ ${wb.content || ""}`;
   };
   useEffect(() => {
     if (!appDataHydrated) return;
+    const t = setTimeout(() => { void v113PruneThumbs((loadAppData().cards || []).map((c) => c.id)); }, 8000);
+    return () => clearTimeout(t);
+  }, [appDataHydrated]);
+  useEffect(() => {
+    if (!appDataHydrated) return;
     void saveAppData(appData).then((ok) => {
       if (!ok) showToast("\u4FDD\u5B58\u5931\u8D25\uFF1A\u672C\u5730\u6570\u636E\u5E93\u5199\u5165\u5931\u8D25\uFF0C\u8BF7\u91CD\u8BD5", "error");
     });
@@ -5875,6 +6103,10 @@ ${wb.content || ""}`;
     return false;
   };
   const [fivePool,setFivePool]=useState(null);
+  const [fiveInit,setFiveInit]=useState(null);
+  const [fiveReturn,setFiveReturn]=useState(null);
+  useEffect(()=>{ if(!detailCardId&&fiveReturn){ setFiveInit(fiveReturn.init); setFivePool(fiveReturn.pool); setFiveReturn(null); } },[detailCardId,fiveReturn]);
+  const setCardPlayStatus=(id,status)=>updateAppData(prev=>({...prev,cards:prev.cards.map(c=>{ if(c.id!==id)return c; const next={...c}; if(status)next.playStatus=status; else delete next.playStatus; return next; })}));
   const [showSkins,setShowSkins]=useState(false);
   const [skins,setSkins]=useState(null);
   const [report,setReport]=useState([]);
@@ -5885,7 +6117,7 @@ ${wb.content || ""}`;
     get("vault-last-import").then(v=>{if(live&&Array.isArray(v))setReport(prev=>prev.length?prev:v);}).catch(()=>{});
     return ()=>{live=false;};
   },[]);
-  const saveSkins=async value=>{try{await set("vault-independent-css",value);setSkins(value);}catch{showToast("美化保存失败","error");}};
+  const saveSkins=async value=>{await set("vault-independent-css",value);setSkins(value);};
   const [showThemes,setShowThemes]=useState(false);
   const [showScan,setShowScan]=useState(false);
   const importBusy = useRef(false);
@@ -6491,7 +6723,7 @@ ${item.details}`], { type: "text/plain;charset=utf-8" });
   return /* @__PURE__ */ jsxs("div", { className: "min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 flex flex-col font-sans antialiased selection:bg-zinc-800 selection:text-white", children: [
     skins?.active && jsx("style",{children:skins.items.find(s=>s.id===skins.active)?.css||""}),
     showSkins && skins && jsx(SkinManager,{data:skins,save:saveSkins,close:()=>setShowSkins(false)}),
-    fivePool && jsx(FivePanel,{pool:fivePool,close:()=>setFivePool(null),open:id=>{setFivePool(null);setShowThemes(false);setDetailCardId(id);setDetailTab("overview");}}),
+    fivePool && jsx(FivePanel,{pool:fivePool,cards:appData.cards,init:fiveInit,setStatus:setCardPlayStatus,close:()=>{setFivePool(null);setFiveInit(null);},open:(id,state)=>{setFiveReturn({pool:fivePool,init:state});setFivePool(null);setFiveInit(null);setShowThemes(false);setDetailCardId(id);setDetailTab("overview");}}),
     showReport && hVault("div",{className:"vh-overlay"},hVault("section",{className:"vh-panel vault-history"},hVault(OverlayHead,{title:"本次导入清单",close:()=>setShowReport(false)}),...report.map((r,i)=>hVault("article",{key:i},hVault("strong",null,(r.name||r.file)+" · "+r.status),hVault("small",null,r.file),r.detail&&hVault("p",null,r.detail),appData.cards.some(c=>c.id===r.id)&&hVault("button",{className:"vh-link",onClick:()=>{setShowReport(false);setDetailCardId(r.id);setDetailTab("history");}},"查看版本记录"))))),
     showThemes && jsx(ThemeFinder,{draw:setFivePool,cards:appData.cards,close:()=>setShowThemes(false),open:id=>{setShowThemes(false);setDetailCardId(id);setDetailTab("overview");},hideTag:(id,tag,restore)=>updateAppData(prev=>({...prev,cards:prev.cards.map(c=>c.id!==id?c:{...c,hiddenThemeTags:[...(c.hiddenThemeTags||[]).filter(t=>t!==tag),...(restore?[]:[tag])]})}))}),
     showScan && jsx(ScanPanel,{cards:appData.cards,close:()=>setShowScan(false),mark:(a,b,distinct)=>updateAppData(prev=>({...prev,cards:markDistinctCards(prev.cards,a,b,distinct)})),merge:(keep,other)=>updateAppData(prev=>({...prev,cards:combineDuplicates(prev.cards,keep,other)}))}),
@@ -6849,6 +7081,7 @@ ${item.details}`], { type: "text/plain;charset=utf-8" });
           ] })
         ] }),
         /* @__PURE__ */ jsx("div", { className: "flex-1 overflow-y-auto p-4 md:p-6", children: currentPage === "st-cards" ? /* @__PURE__ */ jsxs("div", { className: "max-w-7xl mx-auto space-y-5", children: [
+          jsx(BackupNudge, { cardCount: appData.cards.length, busy: !!streamCardBackupProgress, onBackup: () => { void prepareStreamFullBackup(); } }),
           /* @__PURE__ */ jsxs(
             "div",
             {
@@ -7038,11 +7271,12 @@ ${item.details}`], { type: "text/plain;charset=utf-8" });
                 className: `group bg-white dark:bg-zinc-900 border rounded-lg overflow-hidden cursor-pointer transition-all hover:shadow-md flex flex-col relative ${isSelected ? "border-zinc-900 dark:border-zinc-100 ring-2 ring-zinc-900 dark:ring-zinc-100" : "border-zinc-200 dark:border-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-600"}`,
                 children: [
                   /* @__PURE__ */ jsxs("div", { className: "aspect-[2/3] w-full bg-zinc-100 dark:bg-zinc-800 relative overflow-hidden flex items-center justify-center", children: [
-                    card.coverImage ? /* @__PURE__ */ jsx("img", { src: card.coverImage, alt: name, className: "w-full h-full object-contain group-hover:scale-105 transition-transform duration-300" }) : /* @__PURE__ */ jsxs("div", { className: "text-[10px] text-zinc-400 flex flex-col items-center gap-0.5", children: [
+                    card.coverImage ? /* @__PURE__ */ jsx(VaultThumb, { id: card.id, src: card.coverImage, alt: name, className: "w-full h-full object-contain group-hover:scale-105 transition-transform duration-300" }) : /* @__PURE__ */ jsxs("div", { className: "text-[10px] text-zinc-400 flex flex-col items-center gap-0.5", children: [
                       /* @__PURE__ */ jsx(ImageIcon, { className: "w-5 h-5 opacity-40" }),
                       /* @__PURE__ */ jsx("span", { children: "\u65E0\u5C01\u9762" })
                     ] }),
                     /* @__PURE__ */ jsx("span", { className: "absolute top-1.5 right-1.5 px-1 py-0.5 rounded bg-black/70 text-white text-[9px] font-bold uppercase tracking-wider backdrop-blur-sm", children: card.version }),
+                    card.playStatus && V114_STATUS_LABEL[card.playStatus] && jsx("span", { className: "v114-badge v114-" + card.playStatus, children: V114_STATUS_LABEL[card.playStatus] }),
                     batchMode && /* @__PURE__ */ jsx("div", { className: "absolute top-1.5 left-1.5", children: isSelected ? /* @__PURE__ */ jsx(CheckCircle2, { className: "w-4 h-4 text-zinc-900 dark:text-zinc-100 fill-white dark:fill-zinc-900" }) : /* @__PURE__ */ jsx(Circle, { className: "w-4 h-4 text-white/80 drop-shadow" }) })
                   ] }),
                   /* @__PURE__ */ jsxs("div", { className: "p-2 flex-1 flex flex-col justify-between space-y-1", children: [
@@ -9684,6 +9918,7 @@ ${item.details}`], { type: "text/plain;charset=utf-8" });
           }
         )
       ] }),
+      jsx(PlayStatusBar, { className: "v114-detailbar", label: "玩卡状态", status: activeDetailCard.playStatus, onChange: (st) => setCardPlayStatus(activeDetailCard.id, st) }),
       /* @__PURE__ */ jsx("div", { className: "flex border-b border-zinc-200 dark:border-zinc-800 px-6 gap-2 overflow-x-auto flex-shrink-0 bg-white dark:bg-zinc-900 scrollbar-none", children: [
         { id: "overview", name: "\u6982\u89C8" },
         { id:"history",name:"版本记录" },
@@ -17813,6 +18048,8 @@ ${item.details}`], { type: "text/plain;charset=utf-8" });
           ] }),
           getCardDescription(gachaCard) && /* @__PURE__ */ jsx("p", { className: "text-xs text-zinc-600 dark:text-zinc-300 mt-2 line-clamp-3 bg-zinc-50 dark:bg-zinc-800/60 p-2.5 rounded-lg border border-zinc-200/60 dark:border-zinc-800/60 leading-relaxed text-left", children: getCardDescription(gachaCard) })
         ] }),
+        jsx(PlayStatusBar, { className: "v114-center", status: (appData.cards.find((c) => c.id === gachaCard.id) || gachaCard).playStatus, onChange: (st) => setCardPlayStatus(gachaCard.id, st) }),
+        jsx("button", { type: "button", className: "v114-histlink", onClick: () => { setGachaCard(null); setFiveInit({ view: "history" }); setFivePool(appData.cards); }, children: "抽卡记录 ›" }),
         (gachaCard.associations || []).length > 0 && /* @__PURE__ */ jsxs("div", { className: "text-left border-t border-zinc-200 dark:border-zinc-800 pt-3 space-y-2", children: [
           /* @__PURE__ */ jsx("div", { className: "text-xs font-bold text-zinc-700 dark:text-zinc-300", children: "\u5DF2\u5173\u8054\u89D2\u8272\u5361" }),
           /* @__PURE__ */ jsx("div", { className: "flex flex-wrap gap-1.5", children: (gachaCard.associations || []).map((a) => {
