@@ -1731,6 +1731,28 @@ function previewParts(edits,side,mark){
   if(offset>start+100)parts.push("…");
   return parts;
 }
+/* v12.2：勾选「标注」后，列出所有改动处（每处带前后文），「查看全文」里也全部标出 */
+function v122HunkParts(edits,side,ctx=40,cap=800){
+  const parts=[], n=edits.length;
+  const changed=e=>e.added||e.removed, shown=e=>side==="a"?!e.added:!e.removed;
+  for(let i=0;i<n;i++){
+    const e=edits[i];
+    if(changed(e)){
+      if(!shown(e))continue;
+      const t=e.value.length>cap?e.value.slice(0,cap)+"…":e.value;
+      parts.push(hVault(e.added?"ins":"del",{key:"h"+i},t));
+      continue;
+    }
+    const v=e.value, before=i>0&&changed(edits[i-1]), after=i<n-1&&changed(edits[i+1]);
+    if(before&&after)parts.push(v.length<=ctx*2+6?v:v.slice(0,ctx)+"\n⋯\n"+v.slice(-ctx));
+    else if(before)parts.push(v.length<=ctx?v:v.slice(0,ctx)+"…");
+    else if(after)parts.push(v.length<=ctx?v:"…"+v.slice(-ctx));
+  }
+  return parts;
+}
+function v122FullParts(edits,side){
+  return edits.filter(e=>side==="a"?!e.added:!e.removed).map((e,i)=>e.added||e.removed?hVault(e.added?"ins":"del",{key:"f"+i},e.value):e.value);
+}
 function ChangeRow({r,labels}){
   const [open,setOpen]=useState(false),[mark,setMark]=useState(false);
   const status=rowStatus(r),paired=!!(r.a&&r.b);
@@ -1740,17 +1762,19 @@ function ChangeRow({r,labels}){
     const u=r[side];
     if(!u)return hVault("div",{key:side},r.name==="封面"?"见上方封面对照":"—");
     const single=!paired;
-    const preview=single ? [u.body.slice(0,100)+(u.body.length>100?"…":"")] : previewParts(r.edits,side,mark);
+    const preview=single ? [u.body.slice(0,100)+(u.body.length>100?"…":"")] : mark ? v122HunkParts(r.edits,side) : previewParts(r.edits,side,false);
     const hasSettings=u.meta && u.meta!=="{}";
     return hVault("div",{key:side},hVault("small",null,labels[i]),hVault("p",null,preview),
-      hasMeta&&hVault("p",null,previewParts(metaEdits,side,mark)),
+      hasMeta&&hVault("p",null,mark ? v122HunkParts(metaEdits,side) : previewParts(metaEdits,side,false)),
       single&&!u.body&&hasSettings&&hVault("p",null,u.meta.slice(0,100)),
-      hVault("details",null,hVault("summary",null,"查看全文"),hVault("pre",null,[u.body,hasSettings?u.meta:""].filter(Boolean).join("\n"))));
+      hVault("details",null,hVault("summary",null,mark&&!single?"查看全文（已标出改动）":"查看全文"),hVault("pre",null,
+        mark&&!single ? [...v122FullParts(r.edits,side),...(hasSettings?["\n",...(hasMeta?v122FullParts(metaEdits,side):[u.meta])]:[])]
+          : [u.body,hasSettings?u.meta:""].filter(Boolean).join("\n"))));
   }
   return hVault("div",{className:"v11-record"},hVault("button",{className:"v11-pair v11-row","aria-expanded":open,onClick:()=>setOpen(!open)},
     hVault("span",null,sideTitle(r,"a")),hVault("span",null,sideTitle(r,"b")),hVault("small",{"data-status":status},status)),
     open&&hVault("div",{className:"v11-inner"},
-      paired&&status==="修改"&&hVault("label",null,hVault("input",{type:"checkbox",checked:mark,onChange:e=>setMark(e.target.checked)})," 标注变动字符"),
+      paired&&status==="修改"&&hVault("label",null,hVault("input",{type:"checkbox",checked:mark,onChange:e=>setMark(e.target.checked)})," 标注所有改动（全文里也会标出）"),
       status==="调序"&&hVault("small",null,"第 "+(r.a.index+1)+" 条 → 第 "+(r.b.index+1)+" 条"),
       hVault("div",{className:"v11-pair"},["a","b"].map(detail))));
 }
